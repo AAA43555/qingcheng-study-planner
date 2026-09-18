@@ -1,10 +1,53 @@
 const STORAGE_KEY = "qingcheng-tasks-v1";
 const THEME_KEY = "qingcheng-theme";
+const CATEGORY_KEY = "qingcheng-categories-v1";
 
-const categoryMap = {
-  cet6: { label: "六级备考", color: "#006a60", icon: "translate" },
-  lab: { label: "实验催办", color: "#755600", icon: "science" },
-  homework: { label: "作业", color: "#825500", icon: "assignment" },
+const defaultCategories = [
+  { id: "cet6", label: "六级备考", color: "#735bb9", icon: "translate" },
+  { id: "lab", label: "实验催办", color: "#9a63b8", icon: "science" },
+  { id: "homework", label: "作业", color: "#b05f94", icon: "assignment" },
+];
+
+const scoldModes = {
+  sharp: {
+    label: "毒舌催促",
+    lines: [
+      "「{task}」还没做？你的执行力是被你亲手弄丢了吗？",
+      "盯着我也不会让「{task}」自己完成，法厄同大人。",
+      "再拖「{task}」，截止时间都要替你感到丢脸了。",
+    ],
+  },
+  strict: {
+    label: "严厉训诫",
+    lines: [
+      "现在去完成「{task}」。别找借口，也别让我重复第二遍。",
+      "「{task}」没有完成之前，不准分心。立刻开始。",
+      "法厄同大人，请把「{task}」推进完，再来见我。",
+    ],
+  },
+  gentle: {
+    label: "温柔督促",
+    lines: [
+      "先把「{task}」推进一点吧，我会陪着法厄同大人的。",
+      "「{task}」还在等你呢，完成之后就可以安心休息啦。",
+      "不用一口气做到完美，先开始「{task}」就很好。",
+    ],
+  },
+  silent: {
+    label: "只提醒",
+    lines: [
+      "提醒：该处理「{task}」了。",
+      "「{task}」即将到期，请记得完成。",
+      "待办「{task}」还没有完成。",
+    ],
+  },
+};
+
+const repeatModes = {
+  none: { label: "不循环", icon: "" },
+  daily: { label: "每天", icon: "today" },
+  weekly: { label: "每周", icon: "date_range" },
+  monthly: { label: "每月", icon: "calendar_month" },
 };
 
 const now = new Date();
@@ -16,14 +59,15 @@ const at = (dayOffset, hour, minute = 0) => {
 };
 
 const seedTasks = [
-  { id: crypto.randomUUID(), title: "六级词汇 50 个", category: "cet6", deadline: at(0, 9), stages: 3, progress: 0, reminderMinutes: 30, notified: false, note: "复习昨天的错词", done: false },
-  { id: crypto.randomUUID(), title: "催实验数据", category: "lab", deadline: at(0, 14, 30), stages: 1, progress: 0, reminderMinutes: 30, notified: false, note: "联系同组同学确认数据", done: false },
-  { id: crypto.randomUUID(), title: "提交高数作业", category: "homework", deadline: at(0, 22), stages: 3, progress: 0, reminderMinutes: 30, notified: false, note: "检查第 4 题计算过程", done: false },
-  { id: crypto.randomUUID(), title: "六级听力真题", category: "cet6", deadline: at(1, 19, 30), stages: 3, progress: 0, reminderMinutes: 30, notified: false, note: "2024 年 6 月第一套", done: false },
-  { id: crypto.randomUUID(), title: "实验报告初稿", category: "lab", deadline: at(2, 18), stages: 3, progress: 0, reminderMinutes: 30, notified: false, note: "完成结果分析部分", done: false },
-  { id: crypto.randomUUID(), title: "线性代数习题", category: "homework", deadline: at(4, 22), stages: 1, progress: 0, reminderMinutes: 30, notified: false, note: "第 3 章课后题", done: false },
+  { id: crypto.randomUUID(), title: "六级词汇 50 个", category: "cet6", deadline: at(0, 9), stages: 3, progress: 0, reminderMinutes: 30, scoldMode: "sharp", repeat: "daily", notified: false, note: "复习昨天的错词", done: false },
+  { id: crypto.randomUUID(), title: "催实验数据", category: "lab", deadline: at(0, 14, 30), stages: 1, progress: 0, reminderMinutes: 30, scoldMode: "strict", repeat: "none", notified: false, note: "联系同组同学确认数据", done: false },
+  { id: crypto.randomUUID(), title: "提交高数作业", category: "homework", deadline: at(0, 22), stages: 3, progress: 0, reminderMinutes: 30, scoldMode: "sharp", repeat: "weekly", notified: false, note: "检查第 4 题计算过程", done: false },
+  { id: crypto.randomUUID(), title: "六级听力真题", category: "cet6", deadline: at(1, 19, 30), stages: 3, progress: 0, reminderMinutes: 30, scoldMode: "gentle", repeat: "weekly", notified: false, note: "2024 年 6 月第一套", done: false },
+  { id: crypto.randomUUID(), title: "实验报告初稿", category: "lab", deadline: at(2, 18), stages: 3, progress: 0, reminderMinutes: 30, scoldMode: "strict", repeat: "none", notified: false, note: "完成结果分析部分", done: false },
+  { id: crypto.randomUUID(), title: "线性代数习题", category: "homework", deadline: at(4, 22), stages: 1, progress: 0, reminderMinutes: 30, scoldMode: "sharp", repeat: "none", notified: false, note: "第 3 章课后题", done: false },
 ];
 
+let categories = loadCategories();
 let tasks = loadTasks();
 let activeFilter = "all";
 let notificationTimers = [];
@@ -79,7 +123,23 @@ const refs = {
   iosHint: document.querySelector("#iosHint"),
   widgetPreviewText: document.querySelector("#widgetPreviewText"),
   exportAllCalendar: document.querySelector("#exportAllCalendar"),
+  filters: document.querySelector("#filters"),
+  taskCategory: document.querySelector("#taskCategory"),
+  categoryDialog: document.querySelector("#categoryDialog"),
+  categoryEditorList: document.querySelector("#categoryEditorList"),
+  categoryForm: document.querySelector("#categoryForm"),
+  newCategoryName: document.querySelector("#newCategoryName"),
 };
+
+function loadCategories() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(CATEGORY_KEY));
+    const valid = Array.isArray(stored)
+      ? stored.filter(item => item && typeof item.id === "string" && typeof item.label === "string" && item.label.trim())
+      : [];
+    return valid.length ? valid.map(item => ({ ...item, label: item.label.trim(), color: item.color || "#735bb9", icon: item.icon || "bookmark" })) : defaultCategories.map(item => ({ ...item }));
+  } catch { return defaultCategories.map(item => ({ ...item })); }
+}
 
 function loadTasks() {
   try {
@@ -92,11 +152,28 @@ function normalizeTask(task) {
   const stages = Number(task.stages) === 3 ? 3 : 1;
   const legacyProgress = task.done ? stages : 0;
   const progress = Math.max(0, Math.min(stages, Number.isFinite(Number(task.progress)) ? Number(task.progress) : legacyProgress));
-  return { ...task, stages, progress, done: progress >= stages };
+  const scoldMode = scoldModes[task.scoldMode] ? task.scoldMode : "sharp";
+  const repeat = repeatModes[task.repeat] ? task.repeat : "none";
+  return { ...task, stages, progress, scoldMode, repeat, nextGenerated: Boolean(task.nextGenerated), done: progress >= stages };
 }
 
 function saveTasks() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+}
+
+function saveCategories() {
+  localStorage.setItem(CATEGORY_KEY, JSON.stringify(categories));
+}
+
+function getCategory(id) {
+  return categories.find(category => category.id === id) || { id, label: "未分类", color: "#8a8294", icon: "bookmark" };
+}
+
+function scoldLineFor(task, index = 0) {
+  if (!task) return vivianScolds[index % vivianScolds.length];
+  if (task.scoldMode === "sharp" && categoryScolds[task.category]) return categoryScolds[task.category];
+  const mode = scoldModes[task.scoldMode] || scoldModes.sharp;
+  return mode.lines[index % mode.lines.length].replace("{task}", task.title);
 }
 
 function isToday(value) {
@@ -112,9 +189,98 @@ function formatDeadline(value) {
   return `${day} ${date.toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit", hour12: false })}`;
 }
 
+function renderCategoryControls() {
+  if (activeFilter !== "all" && !categories.some(category => category.id === activeFilter)) activeFilter = "all";
+  refs.filters.replaceChildren();
+  [{ id: "all", label: "全部" }, ...categories].forEach(category => {
+    const button = document.createElement("button");
+    button.className = "filter";
+    button.classList.toggle("active", category.id === activeFilter);
+    button.dataset.filter = category.id;
+    button.textContent = category.label;
+    button.addEventListener("click", () => {
+      activeFilter = category.id;
+      render();
+    });
+    refs.filters.append(button);
+  });
+
+  const selected = refs.taskCategory.value;
+  refs.taskCategory.replaceChildren();
+  categories.forEach(category => {
+    const option = document.createElement("option");
+    option.value = category.id;
+    option.textContent = category.label;
+    refs.taskCategory.append(option);
+  });
+  if (categories.some(category => category.id === selected)) refs.taskCategory.value = selected;
+}
+
+function renderCategoryEditor() {
+  refs.categoryEditorList.replaceChildren();
+  categories.forEach(category => {
+    const row = document.createElement("div");
+    row.className = "category-editor-row";
+
+    const color = document.createElement("input");
+    color.type = "color";
+    color.value = category.color;
+    color.setAttribute("aria-label", `${category.label}的颜色`);
+
+    const name = document.createElement("input");
+    name.type = "text";
+    name.value = category.label;
+    name.maxLength = 12;
+    name.setAttribute("aria-label", "分类名称");
+
+    const save = document.createElement("button");
+    save.type = "button";
+    save.className = "category-row-button save-category";
+    save.title = "保存修改";
+    save.innerHTML = '<span class="material-symbols-rounded">check</span>';
+    save.addEventListener("click", () => {
+      const label = name.value.trim();
+      if (!label) { name.focus(); return; }
+      category.label = label;
+      category.color = color.value;
+      saveCategories();
+      render();
+      renderCategoryEditor();
+    });
+
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "category-row-button delete-category";
+    remove.title = "删除分类";
+    remove.innerHTML = '<span class="material-symbols-rounded">delete</span>';
+    remove.disabled = categories.length === 1;
+    remove.addEventListener("click", () => removeCategory(category.id));
+    row.append(color, name, save, remove);
+    refs.categoryEditorList.append(row);
+  });
+}
+
+function removeCategory(id) {
+  if (categories.length === 1) return;
+  const category = getCategory(id);
+  const affected = tasks.filter(task => task.category === id).length;
+  const message = affected
+    ? `删除“${category.label}”后，其中 ${affected} 项任务会移到其他分类。继续吗？`
+    : `确定删除“${category.label}”吗？`;
+  if (!window.confirm(message)) return;
+  categories = categories.filter(item => item.id !== id);
+  const fallbackId = categories[0].id;
+  tasks = tasks.map(task => task.category === id ? { ...task, category: fallbackId } : task);
+  if (activeFilter === id) activeFilter = "all";
+  saveCategories();
+  saveTasks();
+  render();
+  renderCategoryEditor();
+}
+
 function createTaskCard(task) {
   const card = refs.taskTemplate.content.firstElementChild.cloneNode(true);
-  const category = categoryMap[task.category];
+  const category = getCategory(task.category);
   card.dataset.id = task.id;
   card.classList.toggle("three-stage", task.stages === 3);
   card.classList.toggle("done", task.done);
@@ -128,6 +294,19 @@ function createTaskCard(task) {
     reminder.title = reminderLabel(Number(task.reminderMinutes));
     reminder.innerHTML = '<span class="material-symbols-rounded">notifications_active</span>';
     card.querySelector(".task-meta").append(reminder);
+  }
+  const scoldMark = document.createElement("span");
+  scoldMark.className = "mode-mark";
+  scoldMark.title = `训话：${scoldModes[task.scoldMode].label}`;
+  scoldMark.innerHTML = '<span class="material-symbols-rounded">record_voice_over</span>';
+  card.querySelector(".task-meta").append(scoldMark);
+  if (task.repeat !== "none") {
+    const repeat = repeatModes[task.repeat];
+    const repeatMark = document.createElement("span");
+    repeatMark.className = "mode-mark repeat-mark";
+    repeatMark.title = `循环：${repeat.label}`;
+    repeatMark.innerHTML = `<span class="material-symbols-rounded">${repeat.icon}</span><span>${repeat.label}</span>`;
+    card.querySelector(".task-meta").append(repeatMark);
   }
   card.querySelector(".task-note").textContent = task.note || "没有备注";
   const petals = [...card.querySelectorAll(".bloom-flower i")];
@@ -158,6 +337,7 @@ function fillList(container, list) {
 }
 
 function render() {
+  renderCategoryControls();
   const todayTasks = tasks.filter(task => isToday(task.deadline));
   fillList(refs.todayTasks, todayTasks);
   fillList(refs.allTasks, tasks.filter(task => activeFilter === "all" || task.category === activeFilter));
@@ -172,12 +352,19 @@ function render() {
   updateVivian(todayTasks, doneToday);
 
   refs.summaryGrid.replaceChildren();
-  Object.entries(categoryMap).forEach(([key, category]) => {
-    const list = tasks.filter(task => task.category === key);
+  categories.forEach(category => {
+    const list = tasks.filter(task => task.category === category.id);
     const done = list.filter(task => task.done).length;
     const card = document.createElement("article");
     card.className = "summary-card";
-    card.innerHTML = `<span class="material-symbols-rounded">${category.icon}</span><strong>${done}/${list.length}</strong><span>${category.label}</span>`;
+    const icon = document.createElement("span");
+    icon.className = "material-symbols-rounded";
+    icon.textContent = category.icon;
+    const count = document.createElement("strong");
+    count.textContent = `${done}/${list.length}`;
+    const label = document.createElement("span");
+    label.textContent = category.label;
+    card.append(icon, count, label);
     refs.summaryGrid.append(card);
   });
   const totalDone = tasks.filter(task => task.done).length;
@@ -212,8 +399,9 @@ function updateVivian(todayTasks, doneToday) {
     refs.vivianSpeech.textContent = "没有日程可不等于可以荒废。去给自己加一项任务。";
     refs.patButton.querySelector("span:last-child").textContent = "完成后可摸头";
   } else {
+    const nextUnfinished = todayTasks.filter(task => !task.done).sort((a, b) => new Date(a.deadline) - new Date(b.deadline))[0];
     refs.todayTitle.textContent = "今天也别想偷懒";
-    refs.vivianSpeech.textContent = `${vivianScolds[(new Date().getDate() + remaining) % vivianScolds.length]} 还剩 ${remaining} 项。`;
+    refs.vivianSpeech.textContent = `${scoldLineFor(nextUnfinished, new Date().getDate() + remaining)} 还剩 ${remaining} 项。`;
     refs.patButton.querySelector("span:last-child").textContent = "完成后可摸头";
   }
 }
@@ -237,10 +425,10 @@ function patVivian() {
 
 function scoldVivian(unfinished) {
   vivianInteractionIndex += 1;
-  const categoryLine = unfinished.length ? categoryScolds[unfinished[0].category] : null;
-  const generalLine = vivianScolds[vivianInteractionIndex % vivianScolds.length];
+  const target = unfinished.slice().sort((a, b) => new Date(a.deadline) - new Date(b.deadline))[0];
+  const line = scoldLineFor(target, vivianInteractionIndex);
   refs.todayTitle.textContent = "还敢来招惹我？";
-  refs.vivianSpeech.textContent = `${categoryLine || generalLine} 还剩 ${unfinished.length} 项。`;
+  refs.vivianSpeech.textContent = `${line} 还剩 ${unfinished.length} 项。`;
   popSpeech();
   refs.vivianPortrait.classList.remove("scolding");
   requestAnimationFrame(() => refs.vivianPortrait.classList.add("scolding"));
@@ -303,12 +491,14 @@ function icsDate(value) {
 function buildIcsEvent(task) {
   const start = new Date(task.deadline);
   const end = new Date(start.getTime() + 60 * 60_000);
+  const repeatRule = task.repeat === "daily" ? "RRULE:FREQ=DAILY" : task.repeat === "weekly" ? "RRULE:FREQ=WEEKLY" : task.repeat === "monthly" ? "RRULE:FREQ=MONTHLY" : null;
   const alarm = Number(task.reminderMinutes) >= 0
     ? ["BEGIN:VALARM", `TRIGGER:-PT${Number(task.reminderMinutes)}M`, "ACTION:DISPLAY", `DESCRIPTION:${icsEscape(task.title)}`, "END:VALARM"]
     : [];
   return [
     "BEGIN:VEVENT", `UID:${task.id}@qingcheng`, `DTSTAMP:${icsDate(new Date())}`, `DTSTART:${icsDate(start)}`, `DTEND:${icsDate(end)}`,
-    `SUMMARY:${icsEscape(task.title)}`, `DESCRIPTION:${icsEscape(`${categoryMap[task.category].label}${task.note ? ` · ${task.note}` : ""}`)}`,
+    `SUMMARY:${icsEscape(task.title)}`, `DESCRIPTION:${icsEscape(`${getCategory(task.category).label}${task.note ? ` · ${task.note}` : ""}`)}`,
+    ...(repeatRule ? [repeatRule] : []),
     ...alarm, "END:VEVENT",
   ];
 }
@@ -365,26 +555,46 @@ function scheduleNotifications() {
 async function notifyTask(id) {
   const task = tasks.find(item => item.id === id);
   if (!task || task.done || task.notified) return;
-  const options = { body: `${categoryScolds[task.category]}\n${categoryMap[task.category].label} · ${formatDeadline(task.deadline)}${task.note ? `\n${task.note}` : ""}`, icon: "./icons/icon.svg", badge: "./icons/icon.svg", tag: `task-${task.id}` };
+  const category = getCategory(task.category);
+  const options = { body: `${scoldLineFor(task, new Date().getMinutes())}\n${category.label} · ${formatDeadline(task.deadline)}${task.note ? `\n${task.note}` : ""}`, icon: "./icons/icon-192-vivian.png", badge: "./icons/icon-192-vivian.png", tag: `task-${task.id}` };
   try {
     const registration = await navigator.serviceWorker?.ready;
-    if (registration) await registration.showNotification(`薇薇安：${task.title}还没做？`, options);
-    else new Notification(`薇薇安：${task.title}还没做？`, options);
+    const title = task.scoldMode === "silent" ? `薇薇安提醒：${task.title}` : `薇薇安：${task.title}还没做？`;
+    if (registration) await registration.showNotification(title, options);
+    else new Notification(title, options);
     task.notified = true;
     saveTasks();
   } catch { /* Permission or platform support can change at runtime. */ }
 }
 
+function nextOccurrence(task) {
+  const deadline = new Date(task.deadline);
+  if (task.repeat === "daily") deadline.setDate(deadline.getDate() + 1);
+  if (task.repeat === "weekly") deadline.setDate(deadline.getDate() + 7);
+  if (task.repeat === "monthly") {
+    const day = deadline.getDate();
+    deadline.setDate(1);
+    deadline.setMonth(deadline.getMonth() + 1);
+    const lastDay = new Date(deadline.getFullYear(), deadline.getMonth() + 1, 0).getDate();
+    deadline.setDate(Math.min(day, lastDay));
+  }
+  return normalizeTask({ ...task, id: crypto.randomUUID(), deadline: deadline.toISOString(), progress: 0, done: false, notified: false, nextGenerated: false });
+}
+
 function advanceTask(id, allowReset) {
   let advanced = false;
+  let spawnedTask = null;
   tasks = tasks.map(task => {
     if (task.id !== id) return task;
     if (task.done && allowReset) return { ...task, progress: 0, done: false, notified: false };
     if (task.done) return task;
     advanced = true;
     const progress = Math.min(task.stages, task.progress + 1);
-    return { ...task, progress, done: progress >= task.stages };
+    const done = progress >= task.stages;
+    if (done && task.repeat !== "none" && !task.nextGenerated) spawnedTask = nextOccurrence(task);
+    return { ...task, progress, done, nextGenerated: task.nextGenerated || Boolean(spawnedTask) };
   });
+  if (spawnedTask) tasks.push(spawnedTask);
   saveTasks(); render();
   if (advanced) document.querySelectorAll(`[data-id="${id}"]`).forEach(animateBloom);
 }
@@ -416,12 +626,6 @@ document.querySelectorAll(".nav-item").forEach(button => button.addEventListener
   document.querySelectorAll(".view").forEach(view => view.classList.toggle("active", view.id === button.dataset.view));
 }));
 
-document.querySelectorAll(".filter").forEach(button => button.addEventListener("click", () => {
-  activeFilter = button.dataset.filter;
-  document.querySelectorAll(".filter").forEach(item => item.classList.toggle("active", item === button));
-  render();
-}));
-
 document.querySelector("#addButton").addEventListener("click", () => {
   const next = new Date(); next.setHours(next.getHours() + 1); next.setMinutes(0, 0, 0);
   refs.deadline.value = new Date(next.getTime() - next.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
@@ -429,17 +633,38 @@ document.querySelector("#addButton").addEventListener("click", () => {
 });
 
 document.querySelector("#closeDialog").addEventListener("click", () => refs.dialog.close());
+document.querySelector("#manageCategories").addEventListener("click", () => {
+  renderCategoryEditor();
+  refs.categoryDialog.showModal();
+});
+document.querySelector("#closeCategoryDialog").addEventListener("click", () => refs.categoryDialog.close());
 refs.notificationButton.addEventListener("click", enableNotifications);
 refs.patButton.addEventListener("click", patVivian);
 refs.vivianPortrait.addEventListener("click", patVivian);
 refs.exportAllCalendar.addEventListener("click", exportAllToCalendar);
+
+refs.categoryForm.addEventListener("submit", event => {
+  event.preventDefault();
+  const data = new FormData(refs.categoryForm);
+  const label = String(data.get("categoryName") || "").trim();
+  if (!label) return;
+  categories.push({ id: `cat-${crypto.randomUUID()}`, label, color: data.get("categoryColor") || "#8b73d8", icon: "bookmark" });
+  saveCategories();
+  refs.categoryForm.reset();
+  document.querySelector("#newCategoryColor").value = "#8b73d8";
+  render();
+  renderCategoryEditor();
+  refs.newCategoryName.focus();
+});
 
 refs.form.addEventListener("submit", event => {
   event.preventDefault();
   const data = new FormData(refs.form);
   const reminderMinutes = Number(data.get("reminder"));
   const stages = Number(data.get("stages")) === 3 ? 3 : 1;
-  tasks.push({ id: crypto.randomUUID(), title: data.get("title").trim(), category: data.get("category"), deadline: new Date(data.get("deadline")).toISOString(), stages, progress: 0, reminderMinutes, notified: false, note: data.get("note").trim(), done: false });
+  const scoldMode = scoldModes[data.get("scoldMode")] ? data.get("scoldMode") : "sharp";
+  const repeat = repeatModes[data.get("repeat")] ? data.get("repeat") : "none";
+  tasks.push({ id: crypto.randomUUID(), title: data.get("title").trim(), category: data.get("category"), deadline: new Date(data.get("deadline")).toISOString(), stages, progress: 0, reminderMinutes, scoldMode, repeat, nextGenerated: false, notified: false, note: data.get("note").trim(), done: false });
   saveTasks(); refs.form.reset(); refs.dialog.close(); render();
   if (reminderMinutes >= 0 && (!("Notification" in window) || Notification.permission !== "granted")) enableNotifications();
 });

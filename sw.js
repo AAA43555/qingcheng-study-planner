@@ -1,5 +1,5 @@
-const CACHE = "qingcheng-v14";
-const ASSETS = ["./", "./index.html", "./styles.css", "./app.js", "./manifest.webmanifest", "./icons/icon-192-vivian.png", "./icons/icon-512-vivian.png", "./icons/apple-touch-icon-vivian.png", "./assets/vivian-scold-cutout.png", "./assets/vivian-pat-cutout.png"];
+const CACHE = "qingcheng-v15";
+const ASSETS = ["./", "./index.html", "./styles.css?v=15", "./app.js?v=15", "./manifest.webmanifest", "./icons/icon-192-vivian.png", "./icons/icon-512-vivian.png", "./icons/apple-touch-icon-vivian.png", "./assets/vivian-scold-cutout.png", "./assets/vivian-pat-cutout.png"];
 self.addEventListener("install", event => event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)).then(() => self.skipWaiting())));
 self.addEventListener("activate", event => event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key !== CACHE).map(key => caches.delete(key)))).then(() => self.clients.claim())));
 self.addEventListener("fetch", event => {

@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#6253a6" />
-    <meta name="description" content="薇薇安小姐我是你的狗：管理六级备考、实验催办与作业的手机日程应用。" />
+    <meta name="description" content="薇薇安小姐我是你的狗：带训话提醒、循环任务和自定义分类的手机日程应用。" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="薇薇安小姐我是你的狗" />
@@ -13,7 +13,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:FILL@0..1&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="styles.css?v=15" />
     <title>薇薇安小姐我是你的狗</title>
   </head>
   <body>
@@ -69,15 +69,16 @@
         </section>
 
         <section class="view" id="planView" aria-labelledby="planTitle">
-          <div class="page-title">
-            <p class="eyebrow">PLAN</p>
-            <h2 id="planTitle">全部计划</h2>
+          <div class="page-title plan-title-row">
+            <div>
+              <p class="eyebrow">PLAN</p>
+              <h2 id="planTitle">全部计划</h2>
+            </div>
+            <button class="manage-category-button" id="manageCategories" type="button">
+              <span class="material-symbols-rounded">tune</span><span>编辑分类</span>
+            </button>
           </div>
           <div class="filters" id="filters" role="group" aria-label="按分类筛选">
-            <button class="filter active" data-filter="all">全部</button>
-            <button class="filter" data-filter="cet6">六级</button>
-            <button class="filter" data-filter="lab">实验</button>
-            <button class="filter" data-filter="homework">作业</button>
           </div>
           <div class="task-list" id="allTasks"></div>
         </section>
@@ -157,9 +158,42 @@
             <option value="60">提前 1 小时</option>
           </select>
         </label>
+        <label>训话模式
+          <select id="taskScoldMode" name="scoldMode">
+            <option value="sharp" selected>毒舌催促</option>
+            <option value="strict">严厉训诫</option>
+            <option value="gentle">温柔督促</option>
+            <option value="silent">只提醒，不训话</option>
+          </select>
+        </label>
+        <label>循环模式
+          <select id="taskRepeat" name="repeat">
+            <option value="none" selected>不循环</option>
+            <option value="daily">每天</option>
+            <option value="weekly">每周</option>
+            <option value="monthly">每月</option>
+          </select>
+          <small class="field-hint">循环任务全部完成后，会自动生成下一期。</small>
+        </label>
         <label>备注<textarea id="taskNote" name="note" placeholder="可选" maxlength="100"></textarea></label>
         <button class="primary-button" value="default" type="submit"><span class="material-symbols-rounded">check</span>保存日程</button>
       </form>
+    </dialog>
+
+    <dialog id="categoryDialog">
+      <div class="category-dialog-content">
+        <div class="dialog-header">
+          <div><p class="eyebrow">CATEGORIES</p><h2>编辑计划分类</h2></div>
+          <button class="icon-button" id="closeCategoryDialog" type="button" aria-label="关闭"><span class="material-symbols-rounded">close</span></button>
+        </div>
+        <p class="dialog-help">名称和颜色都可以修改；删除分类时，其中的任务会移到其他分类。</p>
+        <div class="category-editor-list" id="categoryEditorList"></div>
+        <form class="category-add-form" id="categoryForm">
+          <input id="newCategoryName" name="categoryName" placeholder="新分类名称" required maxlength="12" aria-label="新分类名称" />
+          <input id="newCategoryColor" name="categoryColor" type="color" value="#8b73d8" aria-label="新分类颜色" />
+          <button class="category-add-button" type="submit"><span class="material-symbols-rounded">add</span><span>添加</span></button>
+        </form>
+      </div>
     </dialog>
 
     <template id="taskTemplate">
@@ -180,6 +214,6 @@
       </article>
     </template>
 
-    <script src="app.js" defer></script>
+    <script src="app.js?v=15" defer></script>
   </body>
 </html>

@@ -1,7 +1,7 @@
 {
   "name": "薇薇安小姐我是你的狗",
   "short_name": "薇薇安小姐我是你的狗",
-  "description": "管理六级备考、实验催办与作业日程。",
+  "description": "带薇薇安督促、循环任务和自定义分类的日程应用。",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
