@@ -144,8 +144,9 @@ document.querySelector("#addButton").addEventListener("click", () => {
   refs.dialog.showModal();
 });
 
+document.querySelector("#closeDialog").addEventListener("click", () => refs.dialog.close());
+
 refs.form.addEventListener("submit", event => {
-  if (event.submitter?.value === "cancel") return;
   event.preventDefault();
   const data = new FormData(refs.form);
   tasks.push({ id: crypto.randomUUID(), title: data.get("title").trim(), category: data.get("category"), deadline: new Date(data.get("deadline")).toISOString(), note: data.get("note").trim(), done: false });
