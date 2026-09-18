@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
     <meta name="theme-color" content="#6253a6" />
-    <meta name="description" content="薇薇安小姐我是你的狗：带训话提醒、循环任务和自定义分类的手机日程应用。" />
+    <meta name="description" content="薇薇安小姐我是你的狗：带训话提醒、自定义循环、优先级和分类的手机日程应用。" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="薇薇安小姐我是你的狗" />
@@ -13,7 +13,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:FILL@0..1&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="styles.css?v=16" />
+    <link rel="stylesheet" href="styles.css?v=18" />
     <title>薇薇安小姐我是你的狗</title>
   </head>
   <body>
@@ -142,6 +142,13 @@
             <option value="homework">作业</option>
           </select>
         </label>
+        <label>优先级
+          <select id="taskPriority" name="priority">
+            <option value="high">高优先级 · 先处理</option>
+            <option value="medium" selected>中优先级 · 正常</option>
+            <option value="low">低优先级 · 不着急</option>
+          </select>
+        </label>
         <label>完成方式
           <select id="taskStages" name="stages">
             <option value="1">一次完成</option>
@@ -169,12 +176,27 @@
         <label>循环模式
           <select id="taskRepeat" name="repeat">
             <option value="none" selected>不循环</option>
-            <option value="daily">每天</option>
-            <option value="weekly">每周</option>
-            <option value="monthly">每月</option>
+            <option value="custom">自定义循环</option>
           </select>
-          <small class="field-hint">循环任务全部完成后，会自动生成下一期。</small>
         </label>
+        <div class="repeat-settings" id="repeatSettings" hidden>
+          <label>重复频率
+            <span class="repeat-frequency">
+              <span>每</span>
+              <input id="repeatInterval" name="repeatInterval" type="number" min="1" max="365" value="1" inputmode="numeric" aria-label="重复间隔" />
+              <select id="repeatUnit" name="repeatUnit" aria-label="重复单位">
+                <option value="day">天</option>
+                <option value="week">周</option>
+                <option value="month">月</option>
+              </select>
+            </span>
+          </label>
+          <div class="repeat-date-grid">
+            <label>开始日期<input id="repeatStart" name="repeatStart" type="date" /></label>
+            <label>结束日期<input id="repeatEnd" name="repeatEnd" type="date" /></label>
+          </div>
+          <small class="field-hint">开始日期是第一期，时间沿用上面的截止时间；完成一期后才生成下一期。</small>
+        </div>
         <label>备注<textarea id="taskNote" name="note" placeholder="可选" maxlength="100"></textarea></label>
         <button class="primary-button" value="default" type="submit"><span class="material-symbols-rounded">check</span>保存日程</button>
       </form>
@@ -214,6 +236,6 @@
       </article>
     </template>
 
-    <script src="app.js?v=16" defer></script>
+    <script src="app.js?v=18" defer></script>
   </body>
 </html>

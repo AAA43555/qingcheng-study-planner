@@ -43,11 +43,16 @@ const scoldModes = {
   },
 };
 
-const repeatModes = {
-  none: { label: "不循环", icon: "" },
-  daily: { label: "每天", icon: "today" },
-  weekly: { label: "每周", icon: "date_range" },
-  monthly: { label: "每月", icon: "calendar_month" },
+const repeatUnits = {
+  day: { label: "天", frequency: "DAILY" },
+  week: { label: "周", frequency: "WEEKLY" },
+  month: { label: "月", frequency: "MONTHLY" },
+};
+
+const priorities = {
+  high: { label: "高", rank: 0, color: "#c72f62", icon: "priority_high", ics: 1 },
+  medium: { label: "中", rank: 1, color: "#7958b2", icon: "drag_handle", ics: 5 },
+  low: { label: "低", rank: 2, color: "#687487", icon: "arrow_downward", ics: 9 },
 };
 
 const now = new Date();
@@ -126,6 +131,12 @@ const refs = {
   exportAllCalendar: document.querySelector("#exportAllCalendar"),
   filters: document.querySelector("#filters"),
   taskCategory: document.querySelector("#taskCategory"),
+  taskRepeat: document.querySelector("#taskRepeat"),
+  repeatSettings: document.querySelector("#repeatSettings"),
+  repeatInterval: document.querySelector("#repeatInterval"),
+  repeatUnit: document.querySelector("#repeatUnit"),
+  repeatStart: document.querySelector("#repeatStart"),
+  repeatEnd: document.querySelector("#repeatEnd"),
   categoryDialog: document.querySelector("#categoryDialog"),
   categoryEditorList: document.querySelector("#categoryEditorList"),
   categoryForm: document.querySelector("#categoryForm"),
@@ -146,7 +157,29 @@ function loadTasks() {
   try {
     const stored = JSON.parse(localStorage.getItem(STORAGE_KEY));
     return (Array.isArray(stored) ? stored : seedTasks).map(normalizeTask);
-  } catch { return seedTasks; }
+  } catch { return seedTasks.map(normalizeTask); }
+}
+
+function localDateValue(value) {
+  const date = new Date(value);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function dateAfter(value, amount, unit) {
+  const date = new Date(value);
+  if (unit === "day") date.setDate(date.getDate() + amount);
+  if (unit === "week") date.setDate(date.getDate() + amount * 7);
+  if (unit === "month") {
+    const day = date.getDate();
+    date.setDate(1);
+    date.setMonth(date.getMonth() + amount);
+    const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+    date.setDate(Math.min(day, lastDay));
+  }
+  return date;
 }
 
 function normalizeTask(task) {
@@ -154,8 +187,14 @@ function normalizeTask(task) {
   const legacyProgress = task.done ? stages : 0;
   const progress = Math.max(0, Math.min(stages, Number.isFinite(Number(task.progress)) ? Number(task.progress) : legacyProgress));
   const scoldMode = scoldModes[task.scoldMode] ? task.scoldMode : "sharp";
-  const repeat = repeatModes[task.repeat] ? task.repeat : "none";
-  return { ...task, stages, progress, scoldMode, repeat, nextGenerated: Boolean(task.nextGenerated), done: progress >= stages };
+  const legacyRepeat = { daily: [1, "day"], weekly: [1, "week"], monthly: [1, "month"] }[task.repeat];
+  const repeat = task.repeat === "custom" || legacyRepeat ? "custom" : "none";
+  const repeatInterval = legacyRepeat ? legacyRepeat[0] : Math.max(1, Math.min(365, Number(task.repeatInterval) || 1));
+  const repeatUnit = legacyRepeat ? legacyRepeat[1] : repeatUnits[task.repeatUnit] ? task.repeatUnit : "day";
+  const repeatStart = task.repeatStart || localDateValue(task.deadline);
+  const repeatEnd = task.repeatEnd || (repeat === "custom" ? localDateValue(dateAfter(task.deadline, 1, "month")) : "");
+  const priority = priorities[task.priority] ? task.priority : "medium";
+  return { ...task, stages, progress, scoldMode, priority, repeat, repeatInterval, repeatUnit, repeatStart, repeatEnd, nextGenerated: Boolean(task.nextGenerated), done: progress >= stages };
 }
 
 function saveTasks() {
@@ -188,6 +227,23 @@ function formatDeadline(value) {
   const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
   const day = date.toDateString() === today.toDateString() ? "今天" : date.toDateString() === tomorrow.toDateString() ? "明天" : `${date.getMonth() + 1}月${date.getDate()}日`;
   return `${day} ${date.toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit", hour12: false })}`;
+}
+
+function shortDate(value) {
+  const [, month, day] = String(value).split("-");
+  return `${Number(month)}月${Number(day)}日`;
+}
+
+function repeatLabel(task) {
+  if (task.repeat === "none") return "不循环";
+  const unit = repeatUnits[task.repeatUnit] || repeatUnits.day;
+  return `每 ${task.repeatInterval} ${unit.label} · 至 ${shortDate(task.repeatEnd)}`;
+}
+
+function compareTasks(a, b) {
+  if (a.done !== b.done) return Number(a.done) - Number(b.done);
+  const priorityDifference = priorities[a.priority].rank - priorities[b.priority].rank;
+  return priorityDifference || new Date(a.deadline) - new Date(b.deadline);
 }
 
 function renderCategoryControls() {
@@ -282,13 +338,21 @@ function removeCategory(id) {
 function createTaskCard(task) {
   const card = refs.taskTemplate.content.firstElementChild.cloneNode(true);
   const category = getCategory(task.category);
+  const priority = priorities[task.priority];
   card.dataset.id = task.id;
+  card.dataset.priority = task.priority;
   card.classList.toggle("three-stage", task.stages === 3);
   card.classList.toggle("done", task.done);
   card.style.setProperty("--category", category.color);
+  card.style.setProperty("--priority", priority.color);
   card.querySelector("h3").textContent = task.title;
   card.querySelector(".category-label").textContent = category.label;
   card.querySelector(".deadline").textContent = formatDeadline(task.deadline);
+  const priorityMark = document.createElement("span");
+  priorityMark.className = `priority-mark priority-${task.priority}`;
+  priorityMark.title = `${priority.label}优先级`;
+  priorityMark.innerHTML = `<span class="material-symbols-rounded">${priority.icon}</span><span>${priority.label}</span>`;
+  card.querySelector(".task-meta").append(priorityMark);
   if (Number(task.reminderMinutes) >= 0) {
     const reminder = document.createElement("span");
     reminder.className = "reminder-mark";
@@ -302,11 +366,10 @@ function createTaskCard(task) {
   scoldMark.innerHTML = '<span class="material-symbols-rounded">record_voice_over</span>';
   card.querySelector(".task-meta").append(scoldMark);
   if (task.repeat !== "none") {
-    const repeat = repeatModes[task.repeat];
     const repeatMark = document.createElement("span");
     repeatMark.className = "mode-mark repeat-mark";
-    repeatMark.title = `循环：${repeat.label}`;
-    repeatMark.innerHTML = `<span class="material-symbols-rounded">${repeat.icon}</span><span>${repeat.label}</span>`;
+    repeatMark.title = `循环：${repeatLabel(task)}`;
+    repeatMark.innerHTML = `<span class="material-symbols-rounded">event_repeat</span><span>${repeatLabel(task)}</span>`;
     card.querySelector(".task-meta").append(repeatMark);
   }
   card.querySelector(".task-note").textContent = task.note || "没有备注";
@@ -334,7 +397,7 @@ function fillList(container, list) {
     container.append(empty);
     return;
   }
-  list.sort((a, b) => new Date(a.deadline) - new Date(b.deadline)).forEach(task => container.append(createTaskCard(task)));
+  list.sort(compareTasks).forEach(task => container.append(createTaskCard(task)));
 }
 
 function render() {
@@ -370,7 +433,7 @@ function render() {
   });
   const totalDone = tasks.filter(task => task.done).length;
   refs.insightText.textContent = totalDone ? `你已经完成 ${totalDone} 项日程。保持节奏，比一口气做完更重要。` : "从最小的一项开始，完成后就会看到进度变化。";
-  const nextTask = tasks.filter(task => !task.done).sort((a, b) => new Date(a.deadline) - new Date(b.deadline))[0];
+  const nextTask = tasks.filter(task => !task.done).sort(compareTasks)[0];
   refs.widgetPreviewText.textContent = nextTask ? `${nextTask.title}\n${formatDeadline(nextTask.deadline)}` : "待办全部完成";
   scheduleNotifications();
 }
@@ -400,7 +463,7 @@ function updateVivian(todayTasks, doneToday) {
     refs.vivianSpeech.textContent = "没有日程可不等于可以荒废。去给自己加一项任务。";
     refs.patButton.querySelector("span:last-child").textContent = "完成后可摸头";
   } else {
-    const nextUnfinished = todayTasks.filter(task => !task.done).sort((a, b) => new Date(a.deadline) - new Date(b.deadline))[0];
+    const nextUnfinished = todayTasks.filter(task => !task.done).sort(compareTasks)[0];
     refs.todayTitle.textContent = "今天也别想偷懒";
     refs.vivianSpeech.textContent = `${scoldLineFor(nextUnfinished, new Date().getDate() + remaining)} 还剩 ${remaining} 项。`;
     refs.patButton.querySelector("span:last-child").textContent = "完成后可摸头";
@@ -426,7 +489,7 @@ function patVivian() {
 
 function scoldVivian(unfinished) {
   vivianInteractionIndex += 1;
-  const target = unfinished.slice().sort((a, b) => new Date(a.deadline) - new Date(b.deadline))[0];
+  const target = unfinished.slice().sort(compareTasks)[0];
   const line = scoldLineFor(target, vivianInteractionIndex);
   refs.todayTitle.textContent = "还敢来招惹我？";
   refs.vivianSpeech.textContent = `${line} 还剩 ${unfinished.length} 项。`;
@@ -492,13 +555,16 @@ function icsDate(value) {
 function buildIcsEvent(task) {
   const start = new Date(task.deadline);
   const end = new Date(start.getTime() + 60 * 60_000);
-  const repeatRule = task.repeat === "daily" ? "RRULE:FREQ=DAILY" : task.repeat === "weekly" ? "RRULE:FREQ=WEEKLY" : task.repeat === "monthly" ? "RRULE:FREQ=MONTHLY" : null;
+  const unit = repeatUnits[task.repeatUnit] || repeatUnits.day;
+  const repeatRule = task.repeat === "custom"
+    ? `RRULE:FREQ=${unit.frequency};INTERVAL=${task.repeatInterval};UNTIL=${task.repeatEnd.replace(/-/g, "")}T235959Z`
+    : null;
   const alarm = Number(task.reminderMinutes) >= 0
     ? ["BEGIN:VALARM", `TRIGGER:-PT${Number(task.reminderMinutes)}M`, "ACTION:DISPLAY", `DESCRIPTION:${icsEscape(task.title)}`, "END:VALARM"]
     : [];
   return [
     "BEGIN:VEVENT", `UID:${task.id}@qingcheng`, `DTSTAMP:${icsDate(new Date())}`, `DTSTART:${icsDate(start)}`, `DTEND:${icsDate(end)}`,
-    `SUMMARY:${icsEscape(task.title)}`, `DESCRIPTION:${icsEscape(`${getCategory(task.category).label}${task.note ? ` · ${task.note}` : ""}`)}`,
+    `SUMMARY:${icsEscape(task.title)}`, `DESCRIPTION:${icsEscape(`${getCategory(task.category).label}${task.note ? ` · ${task.note}` : ""}`)}`, `PRIORITY:${priorities[task.priority].ics}`,
     ...(repeatRule ? [repeatRule] : []),
     ...alarm, "END:VEVENT",
   ];
@@ -557,7 +623,7 @@ async function notifyTask(id) {
   const task = tasks.find(item => item.id === id);
   if (!task || task.done || task.notified) return;
   const category = getCategory(task.category);
-  const options = { body: `${scoldLineFor(task, new Date().getMinutes())}\n${category.label} · ${formatDeadline(task.deadline)}${task.note ? `\n${task.note}` : ""}`, icon: "./icons/icon-192-vivian.png", badge: "./icons/icon-192-vivian.png", tag: `task-${task.id}` };
+  const options = { body: `${scoldLineFor(task, new Date().getMinutes())}\n${priorities[task.priority].label}优先级 · ${category.label} · ${formatDeadline(task.deadline)}${task.note ? `\n${task.note}` : ""}`, icon: "./icons/icon-192-vivian.png", badge: "./icons/icon-192-vivian.png", tag: `task-${task.id}` };
   try {
     const registration = await navigator.serviceWorker?.ready;
     const title = task.scoldMode === "silent" ? `薇薇安提醒：${task.title}` : `薇薇安：${task.title}还没做？`;
@@ -569,16 +635,8 @@ async function notifyTask(id) {
 }
 
 function nextOccurrence(task) {
-  const deadline = new Date(task.deadline);
-  if (task.repeat === "daily") deadline.setDate(deadline.getDate() + 1);
-  if (task.repeat === "weekly") deadline.setDate(deadline.getDate() + 7);
-  if (task.repeat === "monthly") {
-    const day = deadline.getDate();
-    deadline.setDate(1);
-    deadline.setMonth(deadline.getMonth() + 1);
-    const lastDay = new Date(deadline.getFullYear(), deadline.getMonth() + 1, 0).getDate();
-    deadline.setDate(Math.min(day, lastDay));
-  }
+  const deadline = dateAfter(task.deadline, task.repeatInterval, task.repeatUnit);
+  if (localDateValue(deadline) > task.repeatEnd) return null;
   return normalizeTask({ ...task, id: crypto.randomUUID(), deadline: deadline.toISOString(), progress: 0, done: false, notified: false, nextGenerated: false });
 }
 
@@ -596,8 +654,9 @@ function advanceTask(id, allowReset) {
     advanced = true;
     const progress = Math.min(task.stages, task.progress + 1);
     const done = progress >= task.stages;
-    if (done && task.repeat !== "none" && !task.nextGenerated) spawnedTask = nextOccurrence(task);
-    return { ...task, progress, done, nextGenerated: task.nextGenerated || Boolean(spawnedTask) };
+    const shouldGenerate = done && task.repeat !== "none" && !task.nextGenerated;
+    if (shouldGenerate) spawnedTask = nextOccurrence(task);
+    return { ...task, progress, done, nextGenerated: task.nextGenerated || shouldGenerate };
   });
   if (spawnedTask) tasks.push(spawnedTask);
   saveTasks(); render();
@@ -626,6 +685,26 @@ function deleteTask(id) {
   saveTasks(); render();
 }
 
+function syncRepeatSettings() {
+  const enabled = refs.taskRepeat.value === "custom";
+  refs.repeatSettings.hidden = !enabled;
+  refs.repeatInterval.required = enabled;
+  refs.repeatStart.required = enabled;
+  refs.repeatEnd.required = enabled;
+  if (!enabled) return;
+  if (!refs.repeatStart.value) refs.repeatStart.value = localDateValue(refs.deadline.value || new Date());
+  if (!refs.repeatEnd.value || refs.repeatEnd.value < refs.repeatStart.value) {
+    refs.repeatEnd.value = localDateValue(dateAfter(`${refs.repeatStart.value}T12:00:00`, 1, "month"));
+  }
+  refs.repeatEnd.min = refs.repeatStart.value;
+}
+
+function applyStartDate(deadline, startValue) {
+  const [year, month, day] = startValue.split("-").map(Number);
+  deadline.setFullYear(year, month - 1, day);
+  return deadline;
+}
+
 document.querySelectorAll(".nav-item").forEach(button => button.addEventListener("click", () => {
   document.querySelectorAll(".nav-item").forEach(item => item.classList.toggle("active", item === button));
   document.querySelectorAll(".view").forEach(view => view.classList.toggle("active", view.id === button.dataset.view));
@@ -642,7 +721,20 @@ document.addEventListener("dblclick", event => event.preventDefault(), { passive
 document.querySelector("#addButton").addEventListener("click", () => {
   const next = new Date(); next.setHours(next.getHours() + 1); next.setMinutes(0, 0, 0);
   refs.deadline.value = new Date(next.getTime() - next.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+  refs.repeatStart.value = localDateValue(next);
+  refs.repeatEnd.value = localDateValue(dateAfter(next, 1, "month"));
+  syncRepeatSettings();
   refs.dialog.showModal();
+});
+
+refs.taskRepeat.addEventListener("change", syncRepeatSettings);
+refs.repeatStart.addEventListener("change", syncRepeatSettings);
+refs.repeatEnd.addEventListener("input", () => refs.repeatEnd.setCustomValidity(""));
+refs.deadline.addEventListener("change", () => {
+  if (refs.taskRepeat.value === "custom" || !refs.deadline.value) return;
+  const deadline = new Date(refs.deadline.value);
+  refs.repeatStart.value = localDateValue(deadline);
+  refs.repeatEnd.value = localDateValue(dateAfter(deadline, 1, "month"));
 });
 
 document.querySelector("#closeDialog").addEventListener("click", () => refs.dialog.close());
@@ -676,9 +768,22 @@ refs.form.addEventListener("submit", event => {
   const reminderMinutes = Number(data.get("reminder"));
   const stages = Number(data.get("stages")) === 3 ? 3 : 1;
   const scoldMode = scoldModes[data.get("scoldMode")] ? data.get("scoldMode") : "sharp";
-  const repeat = repeatModes[data.get("repeat")] ? data.get("repeat") : "none";
-  tasks.push({ id: crypto.randomUUID(), title: data.get("title").trim(), category: data.get("category"), deadline: new Date(data.get("deadline")).toISOString(), stages, progress: 0, reminderMinutes, scoldMode, repeat, nextGenerated: false, notified: false, note: data.get("note").trim(), done: false });
-  saveTasks(); refs.form.reset(); refs.dialog.close(); render();
+  const priority = priorities[data.get("priority")] ? data.get("priority") : "medium";
+  const repeat = data.get("repeat") === "custom" ? "custom" : "none";
+  const repeatInterval = Math.max(1, Math.min(365, Number(data.get("repeatInterval")) || 1));
+  const repeatUnit = repeatUnits[data.get("repeatUnit")] ? data.get("repeatUnit") : "day";
+  const repeatStart = repeat === "custom" ? data.get("repeatStart") : "";
+  const repeatEnd = repeat === "custom" ? data.get("repeatEnd") : "";
+  if (repeat === "custom" && repeatEnd < repeatStart) {
+    refs.repeatEnd.setCustomValidity("结束日期不能早于开始日期");
+    refs.repeatEnd.reportValidity();
+    return;
+  }
+  refs.repeatEnd.setCustomValidity("");
+  const deadline = new Date(data.get("deadline"));
+  if (repeat === "custom") applyStartDate(deadline, repeatStart);
+  tasks.push({ id: crypto.randomUUID(), title: data.get("title").trim(), category: data.get("category"), deadline: deadline.toISOString(), stages, progress: 0, reminderMinutes, scoldMode, priority, repeat, repeatInterval, repeatUnit, repeatStart, repeatEnd, nextGenerated: false, notified: false, note: data.get("note").trim(), done: false });
+  saveTasks(); refs.form.reset(); syncRepeatSettings(); refs.dialog.close(); render();
   if (reminderMinutes >= 0 && (!("Notification" in window) || Notification.permission !== "granted")) enableNotifications();
 });
 
