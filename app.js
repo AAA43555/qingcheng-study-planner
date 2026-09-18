@@ -228,6 +228,7 @@ function patVivian() {
   vivianPatted = true;
   vivianRewardLine = vivianRewards[vivianInteractionIndex % vivianRewards.length];
   render();
+  popSpeech();
   refs.vivianPortrait.classList.remove("patting");
   requestAnimationFrame(() => refs.vivianPortrait.classList.add("patting"));
   setTimeout(() => refs.vivianPortrait.classList.remove("patting"), 760);
@@ -240,9 +241,16 @@ function scoldVivian(unfinished) {
   const generalLine = vivianScolds[vivianInteractionIndex % vivianScolds.length];
   refs.todayTitle.textContent = "还敢来招惹我？";
   refs.vivianSpeech.textContent = `${categoryLine || generalLine} 还剩 ${unfinished.length} 项。`;
+  popSpeech();
   refs.vivianPortrait.classList.remove("scolding");
   requestAnimationFrame(() => refs.vivianPortrait.classList.add("scolding"));
   setTimeout(() => refs.vivianPortrait.classList.remove("scolding"), 420);
+}
+
+function popSpeech() {
+  refs.vivianSpeech.classList.remove("speaking");
+  requestAnimationFrame(() => refs.vivianSpeech.classList.add("speaking"));
+  setTimeout(() => refs.vivianSpeech.classList.remove("speaking"), 460);
 }
 
 function burstHearts() {
