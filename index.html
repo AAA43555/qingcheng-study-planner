@@ -5,7 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#006a60" />
     <meta name="description" content="青程：管理六级备考、实验催办与作业的手机日程应用。" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="青程" />
     <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:FILL@0..1&display=swap" rel="stylesheet" />
@@ -31,16 +35,28 @@
 
       <main>
         <section class="view active" id="todayView" aria-labelledby="todayTitle">
-          <div class="hero">
-            <div>
-              <span class="hero-kicker">TODAY</span>
-              <h2 id="todayTitle">今天，继续向前</h2>
-              <p>把大目标拆成今天能完成的小事。</p>
+          <div class="hero vivian-hero">
+            <div class="vivian-copy">
+              <span class="hero-kicker">薇薇安 · 督学中</span>
+              <h2 id="todayTitle">今天也别想偷懒</h2>
+              <div class="vivian-speech" id="vivianSpeech" aria-live="polite">看着我做什么？任务可不会自己完成。</div>
+              <div class="vivian-controls">
+                <div class="progress-orbit" aria-label="今日完成进度"><span id="progressValue">0%</span></div>
+                <button class="pat-button" id="patButton" disabled><span class="material-symbols-rounded">front_hand</span><span>完成后可摸头</span></button>
+              </div>
             </div>
-            <div class="progress-orbit" aria-label="今日完成进度">
-              <span id="progressValue">0%</span>
-            </div>
+            <button class="vivian-stage stern" id="vivianPortrait" aria-label="点薇薇安听她催你">
+              <img class="vivian-art" src="assets/vivian-art.png" alt="薇薇安" />
+              <span class="vivian-shy-frame" aria-hidden="true"></span>
+              <span class="pat-hand material-symbols-rounded" aria-hidden="true">front_hand</span>
+              <span class="heart-layer" id="heartLayer" aria-hidden="true"></span>
+            </button>
           </div>
+
+          <aside class="ios-hint" id="iosHint" hidden>
+            <span class="material-symbols-rounded">phone_iphone</span>
+            <div><strong>在 iPhone 上获得提醒</strong><p>用 Safari 打开后点“分享 → 添加到主屏幕”，再开启右上角铃铛；需要关掉网页也准时提醒时，请点任务旁的日历按钮。</p></div>
+          </aside>
 
           <div class="section-heading">
             <div>
@@ -72,6 +88,18 @@
             <h2 id="progressTitle">本周进度</h2>
           </div>
           <div class="summary-grid" id="summaryGrid"></div>
+          <article class="widget-card">
+            <div class="widget-preview">
+              <span class="material-symbols-rounded">calendar_month</span>
+              <div><small>接下来</small><strong id="widgetPreviewText">同步待办后显示</strong></div>
+            </div>
+            <div class="widget-copy">
+              <p class="eyebrow">IPHONE WIDGET</p>
+              <h3>把待办放到桌面</h3>
+              <p>先导入全部未完成日程，再在 iPhone 桌面长按空白处 → 编辑 → 添加小组件 → 日历 → “接下来”。</p>
+              <button class="widget-button" id="exportAllCalendar"><span class="material-symbols-rounded">ios_share</span>同步到 iPhone 日历</button>
+            </div>
+          </article>
           <article class="insight-card">
             <span class="material-symbols-rounded">auto_awesome</span>
             <div>
@@ -113,6 +141,12 @@
             <option value="homework">作业</option>
           </select>
         </label>
+        <label>完成方式
+          <select id="taskStages" name="stages">
+            <option value="1">一次完成</option>
+            <option value="3">三阶段推进（点击一次开一部分）</option>
+          </select>
+        </label>
         <label>截止时间<input id="taskDeadline" name="deadline" type="datetime-local" required /></label>
         <label>自动提醒
           <select id="taskReminder" name="reminder">
@@ -131,8 +165,18 @@
     <template id="taskTemplate">
       <article class="task-card">
         <button class="check-button" aria-label="标记完成"><span class="material-symbols-rounded">radio_button_unchecked</span></button>
-        <div class="task-copy"><div class="task-meta"><span class="category-dot"></span><span class="category-label"></span><span class="deadline"></span></div><h3></h3><p class="task-note"></p></div>
-        <button class="delete-button" aria-label="删除日程"><span class="material-symbols-rounded">delete</span></button>
+        <div class="task-copy">
+          <div class="task-meta"><span class="category-dot"></span><span class="category-label"></span><span class="deadline"></span></div>
+          <h3></h3><p class="task-note"></p>
+          <div class="bloom-progress" aria-label="三阶段完成进度">
+            <span class="bloom-flower"><i></i><i></i><i></i><b></b></span>
+            <span class="stage-label"></span>
+          </div>
+        </div>
+        <div class="task-actions">
+          <button class="calendar-button" aria-label="加入 iPhone 日历" title="加入系统日历"><span class="material-symbols-rounded">event_available</span></button>
+          <button class="delete-button" aria-label="删除日程"><span class="material-symbols-rounded">delete</span></button>
+        </div>
       </article>
     </template>
 
