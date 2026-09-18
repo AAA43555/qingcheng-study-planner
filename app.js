@@ -74,6 +74,7 @@ let notificationTimers = [];
 let vivianPatted = false;
 let vivianRewardLine = "";
 let vivianInteractionIndex = 0;
+const taskTapLocks = new Map();
 
 const vivianScolds = [
   "连这点任务都做不完，还敢盯着我看？",
@@ -582,6 +583,10 @@ function nextOccurrence(task) {
 }
 
 function advanceTask(id, allowReset) {
+  const tapTime = performance.now();
+  const previousTap = taskTapLocks.get(id);
+  if (previousTap !== undefined && tapTime - previousTap < 500) return;
+  taskTapLocks.set(id, tapTime);
   let advanced = false;
   let spawnedTask = null;
   tasks = tasks.map(task => {
@@ -625,6 +630,14 @@ document.querySelectorAll(".nav-item").forEach(button => button.addEventListener
   document.querySelectorAll(".nav-item").forEach(item => item.classList.toggle("active", item === button));
   document.querySelectorAll(".view").forEach(view => view.classList.toggle("active", view.id === button.dataset.view));
 }));
+
+let lastTouchEnd = 0;
+document.addEventListener("touchend", event => {
+  const touchTime = Date.now();
+  if (touchTime - lastTouchEnd < 350) event.preventDefault();
+  lastTouchEnd = touchTime;
+}, { passive: false });
+document.addEventListener("dblclick", event => event.preventDefault(), { passive: false });
 
 document.querySelector("#addButton").addEventListener("click", () => {
   const next = new Date(); next.setHours(next.getHours() + 1); next.setMinutes(0, 0, 0);
