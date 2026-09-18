@@ -13,7 +13,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:FILL@0..1&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="styles.css?v=18" />
+    <link rel="stylesheet" href="styles.css?v=19" />
     <title>薇薇安小姐我是你的狗</title>
   </head>
   <body>
@@ -131,7 +131,7 @@
     <dialog id="taskDialog">
       <form method="dialog" id="taskForm">
         <div class="dialog-header">
-          <div><p class="eyebrow">NEW TASK</p><h2>新增日程</h2></div>
+          <div><p class="eyebrow" id="taskDialogEyebrow">NEW TASK</p><h2 id="taskDialogTitle">新增日程</h2></div>
           <button class="icon-button" id="closeDialog" type="button" aria-label="关闭"><span class="material-symbols-rounded">close</span></button>
         </div>
         <label>日程标题<input id="taskTitle" name="title" placeholder="例如：背六级词汇 50 个" required maxlength="40" /></label>
@@ -198,7 +198,7 @@
           <small class="field-hint">开始日期是第一期，时间沿用上面的截止时间；完成一期后才生成下一期。</small>
         </div>
         <label>备注<textarea id="taskNote" name="note" placeholder="可选" maxlength="100"></textarea></label>
-        <button class="primary-button" value="default" type="submit"><span class="material-symbols-rounded">check</span>保存日程</button>
+        <button class="primary-button" value="default" type="submit"><span class="material-symbols-rounded">check</span><span class="button-label">保存日程</span></button>
       </form>
     </dialog>
 
@@ -230,12 +230,13 @@
           </div>
         </div>
         <div class="task-actions">
+          <button class="edit-button" aria-label="编辑日程" title="编辑日程"><span class="material-symbols-rounded">edit</span></button>
           <button class="calendar-button" aria-label="加入 iPhone 日历" title="加入系统日历"><span class="material-symbols-rounded">event_available</span></button>
           <button class="delete-button" aria-label="删除日程"><span class="material-symbols-rounded">delete</span></button>
         </div>
       </article>
     </template>
 
-    <script src="app.js?v=18" defer></script>
+    <script src="app.js?v=19" defer></script>
   </body>
 </html>

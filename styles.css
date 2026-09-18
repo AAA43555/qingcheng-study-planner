@@ -77,9 +77,9 @@ button { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
 .task-card:active { transform: scale(.985); }
 .task-card.done { opacity: .58; }
 .task-card.done h3 { text-decoration: line-through; }
-.check-button, .delete-button, .calendar-button { width: 36px; height: 36px; border: 0; border-radius: 50%; display: grid; place-items: center; cursor: pointer; background: transparent; color: var(--primary); }
+.check-button, .edit-button, .delete-button, .calendar-button { width: 36px; height: 36px; border: 0; border-radius: 50%; display: grid; place-items: center; cursor: pointer; background: transparent; color: var(--primary); }
 .delete-button { color: var(--outline); }
-.task-actions { display: flex; flex-direction: column; align-items: center; }
+.task-actions { display: flex; flex-direction: column; align-items: center; gap: 2px; }
 .task-actions .material-symbols-rounded { font-size: 20px; }
 .task-copy { min-width: 0; }
 .task-copy h3 { margin: 7px 0 2px; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -156,6 +156,7 @@ dialog[open] { animation: sheet .3s cubic-bezier(.2,.8,.2,1); }
 .repeat-frequency input, .repeat-frequency select { background: var(--surface); }
 .repeat-date-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .repeat-date-grid input { min-width: 0; background: var(--surface); }
+.repeat-date-grid label { min-width: 0; }
 .category-dialog-content { padding: 24px 22px max(28px, env(safe-area-inset-bottom)); }
 .dialog-help { margin: 12px 0 18px; color: var(--on-surface-variant); font-size: 12px; line-height: 1.5; }
 .category-editor-list { display: grid; gap: 10px; }
@@ -176,7 +177,7 @@ textarea { min-height: 74px; resize: vertical; }
 .primary-button { border: 0; border-radius: 20px; min-height: 56px; color: var(--on-primary); background: var(--primary); font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 9px; cursor: pointer; }
 body.dark { color-scheme: dark; --primary: #cbbdff; --on-primary: #332967; --primary-container: #4b3f7e; --on-primary-container: #e8e0ff; --secondary-container: #403850; --surface: #121017; --surface-low: #1c1923; --surface-high: #2b2634; --on-surface: #eae4ef; --on-surface-variant: #cec6d4; --outline: #978f9e; --shadow: 0 12px 30px rgba(0,0,0,.3); }
 @media (min-width: 700px) { body { background: var(--surface-low); } .app-shell { background: var(--surface); min-height: 100vh; box-shadow: 0 0 50px rgba(0,0,0,.08); } }
-@media (max-width: 430px) { .hero { min-height: 304px; padding: 22px 18px; }.vivian-copy { max-width: 64%; }.vivian-stage { flex-basis: 132px; min-height: 250px; }.vivian-speech { max-width: 205px; }.summary-grid { grid-template-columns: repeat(3, 1fr); } }
-@media (max-width: 390px) { .manage-category-button span:last-child { display: none; }.category-add-form { grid-template-columns: minmax(0, 1fr) 52px 52px; }.category-add-button { padding: 0; justify-content: center; }.category-add-button span:last-child { display: none; }.repeat-date-grid { grid-template-columns: 1fr; } }
+@media (max-width: 430px) { .hero { min-height: 304px; padding: 22px 18px; }.vivian-copy { max-width: 64%; }.vivian-stage { flex-basis: 132px; min-height: 250px; }.vivian-speech { max-width: 205px; }.summary-grid { grid-template-columns: repeat(3, 1fr); }.repeat-date-grid { grid-template-columns: 1fr; }.repeat-date-grid input, #taskDeadline { font-size: 14px; padding-inline: 13px; } }
+@media (max-width: 390px) { .manage-category-button span:last-child { display: none; }.category-add-form { grid-template-columns: minmax(0, 1fr) 52px 52px; }.category-add-button { padding: 0; justify-content: center; }.category-add-button span:last-child { display: none; } }
 @media (max-width: 360px) { .vivian-stage { flex-basis: 112px; min-height: 238px; }.vivian-copy { max-width: 66%; }.hero h2 { font-size: 25px; }.vivian-speech { max-width: 180px; font-size: 12px; }.pat-button span:last-child { display: none; }.summary-grid { grid-template-columns: 1fr; }.summary-card { min-height: 96px; }.widget-card { grid-template-columns: 1fr; }.widget-preview { min-height: 110px; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }

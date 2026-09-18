@@ -80,6 +80,7 @@ let vivianPatted = false;
 let vivianRewardLine = "";
 let vivianInteractionIndex = 0;
 const taskTapLocks = new Map();
+let editingTaskId = null;
 
 const vivianScolds = [
   "连这点任务都做不完，还敢盯着我看？",
@@ -119,8 +120,16 @@ const refs = {
   insightText: document.querySelector("#insightText"),
   taskTemplate: document.querySelector("#taskTemplate"),
   dialog: document.querySelector("#taskDialog"),
+  dialogEyebrow: document.querySelector("#taskDialogEyebrow"),
+  dialogTitle: document.querySelector("#taskDialogTitle"),
   form: document.querySelector("#taskForm"),
+  taskTitle: document.querySelector("#taskTitle"),
   deadline: document.querySelector("#taskDeadline"),
+  taskPriority: document.querySelector("#taskPriority"),
+  taskStages: document.querySelector("#taskStages"),
+  taskReminder: document.querySelector("#taskReminder"),
+  taskScoldMode: document.querySelector("#taskScoldMode"),
+  taskNote: document.querySelector("#taskNote"),
   notificationButton: document.querySelector("#notificationButton"),
   vivianSpeech: document.querySelector("#vivianSpeech"),
   vivianPortrait: document.querySelector("#vivianPortrait"),
@@ -379,6 +388,7 @@ function createTaskCard(task) {
   card.querySelector(".check-button span").textContent = task.done ? "check_circle" : "radio_button_unchecked";
   card.querySelector(".check-button").ariaLabel = task.done ? "重置完成状态" : "推进一个阶段";
   card.querySelector(".check-button").addEventListener("click", event => { event.stopPropagation(); advanceTask(task.id, true); });
+  card.querySelector(".edit-button").addEventListener("click", event => { event.stopPropagation(); openTaskDialog(task); });
   card.querySelector(".calendar-button").addEventListener("click", () => exportTaskToCalendar(task));
   card.querySelector(".delete-button").addEventListener("click", () => deleteTask(task.id));
   card.addEventListener("click", event => {
@@ -719,6 +729,11 @@ document.addEventListener("touchend", event => {
 document.addEventListener("dblclick", event => event.preventDefault(), { passive: false });
 
 document.querySelector("#addButton").addEventListener("click", () => {
+  editingTaskId = null;
+  refs.form.reset();
+  refs.dialogEyebrow.textContent = "NEW TASK";
+  refs.dialogTitle.textContent = "新增日程";
+  refs.form.querySelector(".primary-button .button-label").textContent = "保存日程";
   const next = new Date(); next.setHours(next.getHours() + 1); next.setMinutes(0, 0, 0);
   refs.deadline.value = new Date(next.getTime() - next.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
   refs.repeatStart.value = localDateValue(next);
@@ -726,6 +741,29 @@ document.querySelector("#addButton").addEventListener("click", () => {
   syncRepeatSettings();
   refs.dialog.showModal();
 });
+
+function openTaskDialog(task) {
+  editingTaskId = task.id;
+  refs.dialogEyebrow.textContent = "EDIT TASK";
+  refs.dialogTitle.textContent = "编辑日程";
+  refs.form.querySelector(".primary-button .button-label").textContent = "保存修改";
+  refs.taskTitle.value = task.title;
+  refs.taskCategory.value = task.category;
+  refs.taskPriority.value = task.priority;
+  refs.taskStages.value = String(task.stages);
+  const deadline = new Date(task.deadline);
+  refs.deadline.value = new Date(deadline.getTime() - deadline.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+  refs.taskReminder.value = String(task.reminderMinutes);
+  refs.taskScoldMode.value = task.scoldMode;
+  refs.taskRepeat.value = task.repeat;
+  refs.repeatInterval.value = task.repeatInterval;
+  refs.repeatUnit.value = task.repeatUnit;
+  refs.repeatStart.value = task.repeatStart || localDateValue(deadline);
+  refs.repeatEnd.value = task.repeatEnd || localDateValue(dateAfter(deadline, 1, "month"));
+  refs.taskNote.value = task.note || "";
+  syncRepeatSettings();
+  refs.dialog.showModal();
+}
 
 refs.taskRepeat.addEventListener("change", syncRepeatSettings);
 refs.repeatStart.addEventListener("change", syncRepeatSettings);
@@ -738,6 +776,7 @@ refs.deadline.addEventListener("change", () => {
 });
 
 document.querySelector("#closeDialog").addEventListener("click", () => refs.dialog.close());
+refs.dialog.addEventListener("close", () => { editingTaskId = null; });
 document.querySelector("#manageCategories").addEventListener("click", () => {
   renderCategoryEditor();
   refs.categoryDialog.showModal();
@@ -782,8 +821,12 @@ refs.form.addEventListener("submit", event => {
   refs.repeatEnd.setCustomValidity("");
   const deadline = new Date(data.get("deadline"));
   if (repeat === "custom") applyStartDate(deadline, repeatStart);
-  tasks.push({ id: crypto.randomUUID(), title: data.get("title").trim(), category: data.get("category"), deadline: deadline.toISOString(), stages, progress: 0, reminderMinutes, scoldMode, priority, repeat, repeatInterval, repeatUnit, repeatStart, repeatEnd, nextGenerated: false, notified: false, note: data.get("note").trim(), done: false });
-  saveTasks(); refs.form.reset(); syncRepeatSettings(); refs.dialog.close(); render();
+  const existing = editingTaskId ? tasks.find(task => task.id === editingTaskId) : null;
+  const progress = existing ? Math.min(stages, existing.progress) : 0;
+  const updated = { id: existing?.id || crypto.randomUUID(), title: data.get("title").trim(), category: data.get("category"), deadline: deadline.toISOString(), stages, progress, reminderMinutes, scoldMode, priority, repeat, repeatInterval, repeatUnit, repeatStart, repeatEnd, nextGenerated: existing?.nextGenerated || false, notified: false, note: data.get("note").trim(), done: progress >= stages };
+  if (existing) tasks = tasks.map(task => task.id === existing.id ? normalizeTask(updated) : task);
+  else tasks.push(normalizeTask(updated));
+  saveTasks(); editingTaskId = null; refs.form.reset(); syncRepeatSettings(); refs.dialog.close(); render();
   if (reminderMinutes >= 0 && (!("Notification" in window) || Notification.permission !== "granted")) enableNotifications();
 });
 
