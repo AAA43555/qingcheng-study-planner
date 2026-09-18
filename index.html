@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#006a60" />
+    <meta name="description" content="青程：管理六级备考、实验催办与作业的手机日程应用。" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:FILL@0..1&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+    <title>青程 · 学习日程</title>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow" id="todayLabel"></p>
+          <h1>青程</h1>
+        </div>
+        <button class="icon-button" id="themeToggle" aria-label="切换深色模式">
+          <span class="material-symbols-rounded">dark_mode</span>
+        </button>
+      </header>
+
+      <main>
+        <section class="view active" id="todayView" aria-labelledby="todayTitle">
+          <div class="hero">
+            <div>
+              <span class="hero-kicker">TODAY</span>
+              <h2 id="todayTitle">今天，继续向前</h2>
+              <p>把大目标拆成今天能完成的小事。</p>
+            </div>
+            <div class="progress-orbit" aria-label="今日完成进度">
+              <span id="progressValue">0%</span>
+            </div>
+          </div>
+
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">接下来</p>
+              <h3>今日日程</h3>
+            </div>
+            <span class="count-pill" id="remainingCount">0 项待完成</span>
+          </div>
+          <div class="task-list" id="todayTasks"></div>
+        </section>
+
+        <section class="view" id="planView" aria-labelledby="planTitle">
+          <div class="page-title">
+            <p class="eyebrow">PLAN</p>
+            <h2 id="planTitle">全部计划</h2>
+          </div>
+          <div class="filters" id="filters" role="group" aria-label="按分类筛选">
+            <button class="filter active" data-filter="all">全部</button>
+            <button class="filter" data-filter="cet6">六级</button>
+            <button class="filter" data-filter="lab">实验</button>
+            <button class="filter" data-filter="homework">作业</button>
+          </div>
+          <div class="task-list" id="allTasks"></div>
+        </section>
+
+        <section class="view" id="progressView" aria-labelledby="progressTitle">
+          <div class="page-title">
+            <p class="eyebrow">PROGRESS</p>
+            <h2 id="progressTitle">本周进度</h2>
+          </div>
+          <div class="summary-grid" id="summaryGrid"></div>
+          <article class="insight-card">
+            <span class="material-symbols-rounded">auto_awesome</span>
+            <div>
+              <h3>稳稳推进就很好</h3>
+              <p id="insightText">完成一项日程后，这里会更新你的进度。</p>
+            </div>
+          </article>
+        </section>
+      </main>
+
+      <button class="fab" id="addButton" aria-label="新增日程">
+        <span class="material-symbols-rounded">add</span>
+      </button>
+
+      <nav class="bottom-nav" aria-label="主导航">
+        <button class="nav-item active" data-view="todayView">
+          <span class="material-symbols-rounded">today</span><span>今天</span>
+        </button>
+        <button class="nav-item" data-view="planView">
+          <span class="material-symbols-rounded">calendar_month</span><span>计划</span>
+        </button>
+        <button class="nav-item" data-view="progressView">
+          <span class="material-symbols-rounded">bar_chart</span><span>进度</span>
+        </button>
+      </nav>
+    </div>
+
+    <dialog id="taskDialog">
+      <form method="dialog" id="taskForm">
+        <div class="dialog-header">
+          <div><p class="eyebrow">NEW TASK</p><h2>新增日程</h2></div>
+          <button class="icon-button" value="cancel" aria-label="关闭"><span class="material-symbols-rounded">close</span></button>
+        </div>
+        <label>日程标题<input id="taskTitle" name="title" placeholder="例如：背六级词汇 50 个" required maxlength="40" /></label>
+        <label>分类
+          <select id="taskCategory" name="category">
+            <option value="cet6">六级备考</option>
+            <option value="lab">实验催办</option>
+            <option value="homework">作业</option>
+          </select>
+        </label>
+        <label>截止时间<input id="taskDeadline" name="deadline" type="datetime-local" required /></label>
+        <label>备注<textarea id="taskNote" name="note" placeholder="可选" maxlength="100"></textarea></label>
+        <button class="primary-button" value="default" type="submit"><span class="material-symbols-rounded">check</span>保存日程</button>
+      </form>
+    </dialog>
+
+    <template id="taskTemplate">
+      <article class="task-card">
+        <button class="check-button" aria-label="标记完成"><span class="material-symbols-rounded">radio_button_unchecked</span></button>
+        <div class="task-copy"><div class="task-meta"><span class="category-dot"></span><span class="category-label"></span><span class="deadline"></span></div><h3></h3><p class="task-note"></p></div>
+        <button class="delete-button" aria-label="删除日程"><span class="material-symbols-rounded">delete</span></button>
+      </article>
+    </template>
+
+    <script src="app.js" defer></script>
+  </body>
+</html>

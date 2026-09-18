@@ -1,0 +1,112 @@
+{
+  "title": "青程",
+  "brief": "面向大学生的轻量日程安排工具，集中管理六级备考、实验催办和作业截止事项。",
+  "frame": "phone",
+  "platform": "web",
+  "paletteKey": "teal",
+  "theme": {
+    "dark": false,
+    "bothModes": true,
+    "contrast": "standard",
+    "shape": "rounded",
+    "font": "system",
+    "emphasized": true,
+    "motion": "expressive"
+  },
+  "frames": [
+    { "id": "today", "name": "今天", "x": 0, "y": 0, "note": "显示今日进度和接下来要完成的学习、实验与作业日程。", "bg": "surfaceContainerLow" },
+    { "id": "plans", "name": "计划", "x": 492, "y": 0, "note": "按六级备考、实验催办和作业分类查看全部日程。", "bg": "surfaceContainerLow" },
+    { "id": "detail", "name": "日程详情", "x": 984, "y": 0, "note": "查看任务说明、截止时间并将任务标记为完成。", "bg": "surface" },
+    { "id": "add", "name": "新增日程", "x": 1476, "y": 0, "note": "填写标题、分类和截止时间，创建一条新日程。", "bg": "surface" }
+  ],
+  "groups": [
+    { "id": "today-bar-group", "x": 0, "y": 0, "axis": "x", "items": [
+      { "id": "today-bar", "kind": "topAppBar", "label": "青程", "icon": null, "icon2": "more_vert", "variant": "filled" }
+    ] },
+    { "id": "today-heading-group", "x": 16, "y": 104, "axis": "x", "items": [
+      { "id": "today-heading", "kind": "text", "label": "今天，继续向前", "icon": null, "variant": "filled", "size": 28, "bold": true }
+    ] },
+    { "id": "today-progress-card-group", "x": 16, "y": 160, "axis": "x", "items": [
+      { "id": "today-progress-card", "kind": "card", "label": "今日进度 2 / 5", "supporting": "完成一小步，也算离目标更近。", "icon": "task_alt", "variant": "filled", "fill": "primaryContainer", "size": 380, "size2": 124, "noImage": true }
+    ] },
+    { "id": "today-task-list", "x": 16, "y": 308, "axis": "y", "items": [
+      { "id": "task-cet6-words", "kind": "listItem", "label": "六级词汇 50 个", "supporting": "09:00 · 六级备考", "icon": "translate", "icon2": "chevron_right", "variant": "filled", "action": { "to": "detail", "transition": "slide" } },
+      { "id": "task-lab-data", "kind": "listItem", "label": "催实验数据", "supporting": "14:30 · 实验催办", "icon": "science", "icon2": "chevron_right", "variant": "filled", "action": { "to": "detail", "transition": "slide" } },
+      { "id": "task-homework", "kind": "listItem", "label": "提交高数作业", "supporting": "22:00 · 作业", "icon": "assignment", "icon2": "chevron_right", "variant": "filled", "action": { "to": "detail", "transition": "slide" } }
+    ] },
+    { "id": "today-fab-group", "x": 340, "y": 708, "axis": "x", "items": [
+      { "id": "today-fab", "kind": "fab", "label": "", "icon": "add", "variant": "filled", "note": "打开新增日程表单。", "action": { "to": "add", "transition": "expand" } }
+    ] },
+    { "id": "today-nav-group", "x": 0, "y": 788, "axis": "x", "items": [
+      { "id": "today-nav", "kind": "bottomNav", "label": "", "icon": null, "variant": "filled", "tabs": [
+        { "icon": "today", "label": "今天" },
+        { "icon": "calendar_month", "label": "计划" },
+        { "icon": "bar_chart", "label": "进度" }
+      ], "selected": 0, "actions": { "tab:1": { "to": "plans", "transition": "fade" } } }
+    ] },
+
+    { "id": "plans-bar-group", "x": 492, "y": 0, "axis": "x", "items": [
+      { "id": "plans-bar", "kind": "topAppBar", "label": "全部计划", "icon": null, "icon2": "search", "variant": "filled" }
+    ] },
+    { "id": "plans-chips-group", "x": 508, "y": 108, "axis": "x", "items": [
+      { "id": "plans-chip-all", "kind": "chip", "label": "全部", "icon": null, "variant": "filled", "checked": true },
+      { "id": "plans-chip-cet6", "kind": "chip", "label": "六级", "icon": "translate", "variant": "filled" },
+      { "id": "plans-chip-lab", "kind": "chip", "label": "实验", "icon": "science", "variant": "filled" },
+      { "id": "plans-chip-homework", "kind": "chip", "label": "作业", "icon": "assignment", "variant": "filled" }
+    ] },
+    { "id": "plans-list", "x": 508, "y": 172, "axis": "y", "items": [
+      { "id": "plan-cet6-listening", "kind": "listItem", "label": "六级听力真题", "supporting": "明天 19:30 · 预计 40 分钟", "icon": "headphones", "icon2": "chevron_right", "variant": "filled", "action": { "to": "detail", "transition": "slide" } },
+      { "id": "plan-lab-report", "kind": "listItem", "label": "实验报告初稿", "supporting": "周三 18:00 · 实验催办", "icon": "science", "icon2": "chevron_right", "variant": "filled", "action": { "to": "detail", "transition": "slide" } },
+      { "id": "plan-homework", "kind": "listItem", "label": "线性代数习题", "supporting": "周五 22:00 · 作业", "icon": "assignment", "icon2": "chevron_right", "variant": "filled", "action": { "to": "detail", "transition": "slide" } }
+    ] },
+    { "id": "plans-fab-group", "x": 832, "y": 708, "axis": "x", "items": [
+      { "id": "plans-fab", "kind": "fab", "label": "", "icon": "add", "variant": "filled", "action": { "to": "add", "transition": "expand" } }
+    ] },
+    { "id": "plans-nav-group", "x": 492, "y": 788, "axis": "x", "items": [
+      { "id": "plans-nav", "kind": "bottomNav", "label": "", "icon": null, "variant": "filled", "tabs": [
+        { "icon": "today", "label": "今天" },
+        { "icon": "calendar_month", "label": "计划" },
+        { "icon": "bar_chart", "label": "进度" }
+      ], "selected": 1, "actions": { "tab:0": { "to": "today", "transition": "fade" } } }
+    ] },
+
+    { "id": "detail-bar-group", "x": 984, "y": 0, "axis": "x", "items": [
+      { "id": "detail-bar", "kind": "topAppBar", "label": "日程详情", "icon": "arrow_back", "icon2": "more_vert", "variant": "filled", "actions": { "icon": { "to": "back", "transition": "slide" } } }
+    ] },
+    { "id": "detail-chip-group", "x": 1000, "y": 112, "axis": "x", "items": [
+      { "id": "detail-chip", "kind": "chip", "label": "六级备考", "icon": "translate", "variant": "filled", "checked": true }
+    ] },
+    { "id": "detail-title-group", "x": 1000, "y": 168, "axis": "x", "items": [
+      { "id": "detail-title", "kind": "text", "label": "完成一套六级听力真题", "icon": null, "variant": "filled", "size": 28, "bold": true }
+    ] },
+    { "id": "detail-info-list", "x": 1000, "y": 244, "axis": "y", "items": [
+      { "id": "detail-time", "kind": "listItem", "label": "明天 19:30", "supporting": "提醒时间", "icon": "schedule", "variant": "filled" },
+      { "id": "detail-duration", "kind": "listItem", "label": "40 分钟", "supporting": "预计用时", "icon": "timer", "variant": "filled" },
+      { "id": "detail-note", "kind": "listItem", "label": "2024 年 6 月第一套", "supporting": "任务备注", "icon": "notes", "variant": "filled" }
+    ] },
+    { "id": "detail-button-group", "x": 1000, "y": 560, "axis": "x", "items": [
+      { "id": "detail-complete", "kind": "button", "label": "标记为完成", "icon": "check", "variant": "filled", "size": 380, "toggle": { "icon": "done_all", "variant": "tonal", "label": "已完成" } }
+    ] },
+
+    { "id": "add-bar-group", "x": 1476, "y": 0, "axis": "x", "items": [
+      { "id": "add-bar", "kind": "topAppBar", "label": "新增日程", "icon": "close", "icon2": null, "variant": "filled", "actions": { "icon": { "to": "back", "transition": "slideDown" } } }
+    ] },
+    { "id": "add-title-group", "x": 1492, "y": 116, "axis": "x", "items": [
+      { "id": "add-title", "kind": "textField", "label": "日程标题", "supporting": "例如：背六级词汇 50 个", "icon": "edit", "variant": "outlined" }
+    ] },
+    { "id": "add-category-group", "x": 1492, "y": 196, "axis": "x", "items": [
+      { "id": "add-category", "kind": "select", "label": "分类", "supporting": "选择这项日程所属的计划", "icon": "category", "variant": "outlined", "tabs": [
+        { "label": "六级备考" }, { "label": "实验催办" }, { "label": "作业" }
+      ], "selected": 0 }
+    ] },
+    { "id": "add-date-group", "x": 1492, "y": 276, "axis": "x", "items": [
+      { "id": "add-date", "kind": "textField", "label": "截止时间", "supporting": "选择日期和时间", "icon": "calendar_month", "variant": "outlined" }
+    ] },
+    { "id": "add-reminder-group", "x": 1492, "y": 356, "axis": "x", "items": [
+      { "id": "add-reminder", "kind": "switch", "label": "到期前 30 分钟提醒", "icon": "notifications", "variant": "filled", "checked": true, "size": 380 }
+    ] },
+    { "id": "add-save-group", "x": 1492, "y": 456, "axis": "x", "items": [
+      { "id": "add-save", "kind": "button", "label": "保存日程", "icon": "check", "variant": "filled", "size": 380, "action": { "to": "today", "transition": "slideDown" }, "note": "校验标题和截止时间后保存日程，并返回今天页面。" }
+    ] }
+  ]
+}

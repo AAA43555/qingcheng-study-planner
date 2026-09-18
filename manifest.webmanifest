@@ -1,0 +1,13 @@
+{
+  "name": "青程 · 学习日程",
+  "short_name": "青程",
+  "description": "管理六级备考、实验催办与作业日程。",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f7fbf8",
+  "theme_color": "#006a60",
+  "icons": [
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
