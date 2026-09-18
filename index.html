@@ -19,9 +19,14 @@
           <p class="eyebrow" id="todayLabel"></p>
           <h1>青程</h1>
         </div>
-        <button class="icon-button" id="themeToggle" aria-label="切换深色模式">
-          <span class="material-symbols-rounded">dark_mode</span>
-        </button>
+        <div class="top-actions">
+          <button class="icon-button" id="notificationButton" aria-label="开启日程提醒" title="开启日程提醒">
+            <span class="material-symbols-rounded">notifications</span>
+          </button>
+          <button class="icon-button" id="themeToggle" aria-label="切换深色模式">
+            <span class="material-symbols-rounded">dark_mode</span>
+          </button>
+        </div>
       </header>
 
       <main>
@@ -109,6 +114,15 @@
           </select>
         </label>
         <label>截止时间<input id="taskDeadline" name="deadline" type="datetime-local" required /></label>
+        <label>自动提醒
+          <select id="taskReminder" name="reminder">
+            <option value="-1">不提醒</option>
+            <option value="0">到期时</option>
+            <option value="10">提前 10 分钟</option>
+            <option value="30" selected>提前 30 分钟</option>
+            <option value="60">提前 1 小时</option>
+          </select>
+        </label>
         <label>备注<textarea id="taskNote" name="note" placeholder="可选" maxlength="100"></textarea></label>
         <button class="primary-button" value="default" type="submit"><span class="material-symbols-rounded">check</span>保存日程</button>
       </form>

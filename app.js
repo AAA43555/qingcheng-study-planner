@@ -16,16 +16,17 @@ const at = (dayOffset, hour, minute = 0) => {
 };
 
 const seedTasks = [
-  { id: crypto.randomUUID(), title: "六级词汇 50 个", category: "cet6", deadline: at(0, 9), note: "复习昨天的错词", done: false },
-  { id: crypto.randomUUID(), title: "催实验数据", category: "lab", deadline: at(0, 14, 30), note: "联系同组同学确认数据", done: false },
-  { id: crypto.randomUUID(), title: "提交高数作业", category: "homework", deadline: at(0, 22), note: "检查第 4 题计算过程", done: false },
-  { id: crypto.randomUUID(), title: "六级听力真题", category: "cet6", deadline: at(1, 19, 30), note: "2024 年 6 月第一套", done: false },
-  { id: crypto.randomUUID(), title: "实验报告初稿", category: "lab", deadline: at(2, 18), note: "完成结果分析部分", done: false },
-  { id: crypto.randomUUID(), title: "线性代数习题", category: "homework", deadline: at(4, 22), note: "第 3 章课后题", done: false },
+  { id: crypto.randomUUID(), title: "六级词汇 50 个", category: "cet6", deadline: at(0, 9), reminderMinutes: 30, notified: false, note: "复习昨天的错词", done: false },
+  { id: crypto.randomUUID(), title: "催实验数据", category: "lab", deadline: at(0, 14, 30), reminderMinutes: 30, notified: false, note: "联系同组同学确认数据", done: false },
+  { id: crypto.randomUUID(), title: "提交高数作业", category: "homework", deadline: at(0, 22), reminderMinutes: 30, notified: false, note: "检查第 4 题计算过程", done: false },
+  { id: crypto.randomUUID(), title: "六级听力真题", category: "cet6", deadline: at(1, 19, 30), reminderMinutes: 30, notified: false, note: "2024 年 6 月第一套", done: false },
+  { id: crypto.randomUUID(), title: "实验报告初稿", category: "lab", deadline: at(2, 18), reminderMinutes: 30, notified: false, note: "完成结果分析部分", done: false },
+  { id: crypto.randomUUID(), title: "线性代数习题", category: "homework", deadline: at(4, 22), reminderMinutes: 30, notified: false, note: "第 3 章课后题", done: false },
 ];
 
 let tasks = loadTasks();
 let activeFilter = "all";
+let notificationTimers = [];
 
 const refs = {
   todayLabel: document.querySelector("#todayLabel"),
@@ -39,6 +40,7 @@ const refs = {
   dialog: document.querySelector("#taskDialog"),
   form: document.querySelector("#taskForm"),
   deadline: document.querySelector("#taskDeadline"),
+  notificationButton: document.querySelector("#notificationButton"),
 };
 
 function loadTasks() {
@@ -74,6 +76,13 @@ function createTaskCard(task) {
   card.querySelector("h3").textContent = task.title;
   card.querySelector(".category-label").textContent = category.label;
   card.querySelector(".deadline").textContent = formatDeadline(task.deadline);
+  if (Number(task.reminderMinutes) >= 0) {
+    const reminder = document.createElement("span");
+    reminder.className = "reminder-mark";
+    reminder.title = reminderLabel(Number(task.reminderMinutes));
+    reminder.innerHTML = '<span class="material-symbols-rounded">notifications_active</span>';
+    card.querySelector(".task-meta").append(reminder);
+  }
   card.querySelector(".task-note").textContent = task.note || "没有备注";
   card.querySelector(".check-button span").textContent = task.done ? "check_circle" : "radio_button_unchecked";
   card.querySelector(".check-button").addEventListener("click", () => toggleTask(task.id));
@@ -115,6 +124,56 @@ function render() {
   });
   const totalDone = tasks.filter(task => task.done).length;
   refs.insightText.textContent = totalDone ? `你已经完成 ${totalDone} 项日程。保持节奏，比一口气做完更重要。` : "从最小的一项开始，完成后就会看到进度变化。";
+  scheduleNotifications();
+}
+
+function reminderLabel(minutes) {
+  if (minutes === 0) return "到期时提醒";
+  if (minutes === 60) return "提前 1 小时提醒";
+  return `提前 ${minutes} 分钟提醒`;
+}
+
+async function enableNotifications() {
+  if (!("Notification" in window)) {
+    refs.notificationButton.title = "当前浏览器不支持网页通知";
+    return false;
+  }
+  const permission = Notification.permission === "default" ? await Notification.requestPermission() : Notification.permission;
+  updateNotificationButton();
+  if (permission === "granted") scheduleNotifications();
+  return permission === "granted";
+}
+
+function updateNotificationButton() {
+  const granted = "Notification" in window && Notification.permission === "granted";
+  refs.notificationButton.classList.toggle("enabled", granted);
+  refs.notificationButton.querySelector("span").textContent = granted ? "notifications_active" : "notifications";
+  refs.notificationButton.title = granted ? "日程提醒已开启" : "开启日程提醒";
+}
+
+function scheduleNotifications() {
+  notificationTimers.forEach(clearTimeout);
+  notificationTimers = [];
+  if (!("Notification" in window) || Notification.permission !== "granted") return;
+  const currentTime = Date.now();
+  tasks.filter(task => !task.done && !task.notified && Number(task.reminderMinutes) >= 0).forEach(task => {
+    const fireAt = new Date(task.deadline).getTime() - Number(task.reminderMinutes) * 60_000;
+    if (fireAt < currentTime || fireAt - currentTime > 2_147_000_000) return;
+    notificationTimers.push(setTimeout(() => notifyTask(task.id), fireAt - currentTime));
+  });
+}
+
+async function notifyTask(id) {
+  const task = tasks.find(item => item.id === id);
+  if (!task || task.done || task.notified) return;
+  const options = { body: `${categoryMap[task.category].label} · ${formatDeadline(task.deadline)}${task.note ? `\n${task.note}` : ""}`, icon: "./icons/icon.svg", badge: "./icons/icon.svg", tag: `task-${task.id}` };
+  try {
+    const registration = await navigator.serviceWorker?.ready;
+    if (registration) await registration.showNotification(task.title, options);
+    else new Notification(task.title, options);
+    task.notified = true;
+    saveTasks();
+  } catch { /* Permission or platform support can change at runtime. */ }
 }
 
 function toggleTask(id) {
@@ -145,12 +204,15 @@ document.querySelector("#addButton").addEventListener("click", () => {
 });
 
 document.querySelector("#closeDialog").addEventListener("click", () => refs.dialog.close());
+refs.notificationButton.addEventListener("click", enableNotifications);
 
 refs.form.addEventListener("submit", event => {
   event.preventDefault();
   const data = new FormData(refs.form);
-  tasks.push({ id: crypto.randomUUID(), title: data.get("title").trim(), category: data.get("category"), deadline: new Date(data.get("deadline")).toISOString(), note: data.get("note").trim(), done: false });
+  const reminderMinutes = Number(data.get("reminder"));
+  tasks.push({ id: crypto.randomUUID(), title: data.get("title").trim(), category: data.get("category"), deadline: new Date(data.get("deadline")).toISOString(), reminderMinutes, notified: false, note: data.get("note").trim(), done: false });
   saveTasks(); refs.form.reset(); refs.dialog.close(); render();
+  if (reminderMinutes >= 0 && (!("Notification" in window) || Notification.permission !== "granted")) enableNotifications();
 });
 
 const preferredTheme = localStorage.getItem(THEME_KEY) || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
@@ -161,6 +223,7 @@ document.querySelector("#themeToggle").addEventListener("click", () => {
 });
 
 refs.todayLabel.textContent = new Intl.DateTimeFormat("zh-CN", { month: "long", day: "numeric", weekday: "long" }).format(new Date());
+updateNotificationButton();
 render();
 
 if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js"));
