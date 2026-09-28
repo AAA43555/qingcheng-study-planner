@@ -75,6 +75,7 @@ const seedTasks = [
 let categories = loadCategories();
 let tasks = loadTasks();
 let activeFilter = "all";
+let planStatus = "pending";
 let notificationTimers = [];
 let vivianPatted = false;
 let vivianRewardLine = "";
@@ -116,6 +117,9 @@ const refs = {
   remainingCount: document.querySelector("#remainingCount"),
   todayTasks: document.querySelector("#todayTasks"),
   allTasks: document.querySelector("#allTasks"),
+  pendingPlanCount: document.querySelector("#pendingPlanCount"),
+  completedPlanCount: document.querySelector("#completedPlanCount"),
+  planStatusButtons: [...document.querySelectorAll("[data-plan-status]")],
   summaryGrid: document.querySelector("#summaryGrid"),
   insightText: document.querySelector("#insightText"),
   taskTemplate: document.querySelector("#taskTemplate"),
@@ -194,7 +198,7 @@ function dateAfter(value, amount, unit) {
 function normalizeTask(task) {
   const stages = Number(task.stages) === 3 ? 3 : 1;
   const legacyProgress = task.done ? stages : 0;
-  const progress = Math.max(0, Math.min(stages, Number.isFinite(Number(task.progress)) ? Number(task.progress) : legacyProgress));
+  const progress = task.done ? stages : Math.max(0, Math.min(stages, Number.isFinite(Number(task.progress)) ? Number(task.progress) : legacyProgress));
   const scoldMode = scoldModes[task.scoldMode] ? task.scoldMode : "sharp";
   const legacyRepeat = { daily: [1, "day"], weekly: [1, "week"], monthly: [1, "month"] }[task.repeat];
   const repeat = task.repeat === "custom" || legacyRepeat ? "custom" : "none";
@@ -253,6 +257,14 @@ function compareTasks(a, b) {
   if (a.done !== b.done) return Number(a.done) - Number(b.done);
   const priorityDifference = priorities[a.priority].rank - priorities[b.priority].rank;
   return priorityDifference || new Date(a.deadline) - new Date(b.deadline);
+}
+
+function planGroups(list, categoryId) {
+  const matching = list.filter(task => categoryId === "all" || task.category === categoryId);
+  return {
+    pending: matching.filter(task => !task.done),
+    completed: matching.filter(task => task.done),
+  };
 }
 
 function renderCategoryControls() {
@@ -398,23 +410,36 @@ function createTaskCard(task) {
   return card;
 }
 
-function fillList(container, list) {
+function fillList(container, list, emptyText = "这里暂时没有日程", sort = compareTasks) {
   container.replaceChildren();
   if (!list.length) {
     const empty = document.createElement("div");
     empty.className = "empty";
-    empty.innerHTML = '<span class="material-symbols-rounded">event_available</span><p>这里暂时没有日程</p>';
+    empty.innerHTML = '<span class="material-symbols-rounded">event_available</span><p></p>';
+    empty.querySelector("p").textContent = emptyText;
     container.append(empty);
     return;
   }
-  list.sort(compareTasks).forEach(task => container.append(createTaskCard(task)));
+  list.sort(sort).forEach(task => container.append(createTaskCard(task)));
 }
 
 function render() {
   renderCategoryControls();
   const todayTasks = tasks.filter(task => isToday(task.deadline));
   fillList(refs.todayTasks, todayTasks);
-  fillList(refs.allTasks, tasks.filter(task => activeFilter === "all" || task.category === activeFilter));
+  const { pending: pendingPlans, completed: completedPlans } = planGroups(tasks, activeFilter);
+  refs.pendingPlanCount.textContent = String(pendingPlans.length);
+  refs.completedPlanCount.textContent = String(completedPlans.length);
+  refs.planStatusButtons.forEach(button => {
+    const selected = button.dataset.planStatus === planStatus;
+    button.classList.toggle("active", selected);
+    button.setAttribute("aria-pressed", String(selected));
+  });
+  if (planStatus === "completed") {
+    fillList(refs.allTasks, completedPlans, "还没有已完成任务", (a, b) => new Date(b.completedAt || b.deadline) - new Date(a.completedAt || a.deadline));
+  } else {
+    fillList(refs.allTasks, pendingPlans, "当前没有待办任务");
+  }
 
   const doneToday = todayTasks.filter(task => task.done).length;
   const totalStages = todayTasks.reduce((sum, task) => sum + task.stages, 0);
@@ -659,14 +684,14 @@ function advanceTask(id, allowReset) {
   let spawnedTask = null;
   tasks = tasks.map(task => {
     if (task.id !== id) return task;
-    if (task.done && allowReset) return { ...task, progress: 0, done: false, notified: false };
+    if (task.done && allowReset) return { ...task, progress: 0, done: false, completedAt: null, notified: false };
     if (task.done) return task;
     advanced = true;
     const progress = Math.min(task.stages, task.progress + 1);
     const done = progress >= task.stages;
     const shouldGenerate = done && task.repeat !== "none" && !task.nextGenerated;
     if (shouldGenerate) spawnedTask = nextOccurrence(task);
-    return { ...task, progress, done, nextGenerated: task.nextGenerated || shouldGenerate };
+    return { ...task, progress, done, completedAt: done ? new Date().toISOString() : task.completedAt, nextGenerated: task.nextGenerated || shouldGenerate };
   });
   if (spawnedTask) tasks.push(spawnedTask);
   saveTasks(); render();
@@ -718,6 +743,11 @@ function applyStartDate(deadline, startValue) {
 document.querySelectorAll(".nav-item").forEach(button => button.addEventListener("click", () => {
   document.querySelectorAll(".nav-item").forEach(item => item.classList.toggle("active", item === button));
   document.querySelectorAll(".view").forEach(view => view.classList.toggle("active", view.id === button.dataset.view));
+}));
+
+refs.planStatusButtons.forEach(button => button.addEventListener("click", () => {
+  planStatus = button.dataset.planStatus;
+  render();
 }));
 
 let lastTouchEnd = 0;
@@ -823,7 +853,7 @@ refs.form.addEventListener("submit", event => {
   if (repeat === "custom") applyStartDate(deadline, repeatStart);
   const existing = editingTaskId ? tasks.find(task => task.id === editingTaskId) : null;
   const progress = existing ? Math.min(stages, existing.progress) : 0;
-  const updated = { id: existing?.id || crypto.randomUUID(), title: data.get("title").trim(), category: data.get("category"), deadline: deadline.toISOString(), stages, progress, reminderMinutes, scoldMode, priority, repeat, repeatInterval, repeatUnit, repeatStart, repeatEnd, nextGenerated: existing?.nextGenerated || false, notified: false, note: data.get("note").trim(), done: progress >= stages };
+  const updated = { ...existing, id: existing?.id || crypto.randomUUID(), title: data.get("title").trim(), category: data.get("category"), deadline: deadline.toISOString(), stages, progress, reminderMinutes, scoldMode, priority, repeat, repeatInterval, repeatUnit, repeatStart, repeatEnd, nextGenerated: existing?.nextGenerated || false, notified: false, note: data.get("note").trim(), done: progress >= stages, completedAt: progress >= stages ? existing?.completedAt || null : null };
   if (existing) tasks = tasks.map(task => task.id === existing.id ? normalizeTask(updated) : task);
   else tasks.push(normalizeTask(updated));
   saveTasks(); editingTaskId = null; refs.form.reset(); syncRepeatSettings(); refs.dialog.close(); render();

@@ -113,6 +113,10 @@ button { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
 .plan-title-row { display: flex; align-items: end; justify-content: space-between; gap: 14px; }
 .manage-category-button { min-height: 44px; padding: 0 14px; border: 1px solid var(--surface-high); border-radius: 16px; background: var(--surface-low); color: var(--primary); display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 800; cursor: pointer; }
 .manage-category-button .material-symbols-rounded { font-size: 18px; }
+.plan-status { display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px; padding: 5px; margin-bottom: 16px; border-radius: 20px; background: var(--surface-high); }
+.plan-status-button { min-height: 44px; border: 0; border-radius: 16px; background: transparent; color: var(--on-surface-variant); font-weight: 800; cursor: pointer; }
+.plan-status-button.active { background: var(--surface); color: var(--primary); box-shadow: 0 2px 8px rgba(63, 48, 108, .08); }
+.plan-status-button span { margin-left: 4px; font-size: 12px; opacity: .7; }
 .filters { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 16px; scrollbar-width: none; }
 .filter { border: 1px solid var(--surface-high); border-radius: 999px; padding: 10px 17px; background: transparent; color: var(--on-surface); font-weight: 700; white-space: nowrap; cursor: pointer; }
 .filter.active { border-color: var(--primary); background: var(--primary); color: var(--on-primary); }

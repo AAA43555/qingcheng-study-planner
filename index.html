@@ -13,7 +13,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:FILL@0..1&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="styles.css?v=19" />
+    <link rel="stylesheet" href="styles.css?v=20" />
     <title>薇薇安小姐我是你的狗</title>
   </head>
   <body>
@@ -77,6 +77,10 @@
             <button class="manage-category-button" id="manageCategories" type="button">
               <span class="material-symbols-rounded">tune</span><span>编辑分类</span>
             </button>
+          </div>
+          <div class="plan-status" role="group" aria-label="计划状态">
+            <button class="plan-status-button active" type="button" data-plan-status="pending" aria-pressed="true">待办 <span id="pendingPlanCount">0</span></button>
+            <button class="plan-status-button" type="button" data-plan-status="completed" aria-pressed="false">已完成 <span id="completedPlanCount">0</span></button>
           </div>
           <div class="filters" id="filters" role="group" aria-label="按分类筛选">
           </div>
@@ -237,6 +241,6 @@
       </article>
     </template>
 
-    <script src="app.js?v=19" defer></script>
+    <script src="app.js?v=20" defer></script>
   </body>
 </html>
